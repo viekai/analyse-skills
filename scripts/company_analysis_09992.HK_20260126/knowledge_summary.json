@@ -1,0 +1,599 @@
+{
+  "basic_info": {
+    "company_code": "09992.HK",
+    "analysis_directory": "company_analysis_09992.HK_20260126",
+    "created_at": "2026-01-26T22:35:55.241286",
+    "stock_code": "09992.HK",
+    "market": "HK",
+    "market_type": "HK"
+  },
+  "financial_summary": {
+    "years_covered": [
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+    ],
+    "key_metrics": {},
+    "data_sources": [],
+    "annual_reports_count": 5,
+    "text_files_count": 5
+  },
+  "report_summary": {
+    "report_exists": true,
+    "report_size": 34286,
+    "sections": [
+      "一、执行摘要",
+      "二、公司概况",
+      "三、行业分析",
+      "四、商业模式分析",
+      "五、2025年前三季度业绩分析（重点）",
+      "六、财务分析(杜邦分析框架)",
+      "七、公告分析",
+      "八、风险分析",
+      "九、估值分析",
+      "十、投资建议",
+      "十一、附录",
+      "报告总结"
+    ],
+    "key_investment_points": [
+      "超预期增长延续",
+      "2024年爆发式增长",
+      "全球化加速",
+      "盈利能力持续提升",
+      "IP驱动模式",
+      "现金流充沛"
+    ]
+  },
+  "announcement_summary": {
+    "total_count": 291,
+    "important_count": 0,
+    "date_range": {
+      "start": "2021-01-04",
+      "end": "2026-01-21"
+    },
+    "sample_titles": [
+      "翌日披露报表 - [股份购回]",
+      "翌日披露报表 - [股份购回]",
+      "根据首次公开发售後股份奖励计划授出奖励",
+      "根据首次公开发售後股份奖励计划授出奖励",
+      "截至二零二五年十二月三十一日止月份之股份发行人的证券变动月报表",
+      "提名委员会职权范围",
+      "董事会成员名单与其角色和职能",
+      "(I)非执行董事辞任(II)非执行董事委任；及(III)提名委员会组成变动",
+      "截至二零二五年十一月三十日止月份之股份发行人的证券变动月报表",
+      "截至二零二五年十月三十一日止月份之股份发行人的证券变动月报表"
+    ]
+  },
+  "file_inventory": {
+    "total_files": 102,
+    "total_size_mb": 13.45,
+    "by_category": {
+      "raw_data": {
+        "file_count": 40,
+        "total_size_mb": 6.62,
+        "files": [
+          {
+            "name": "manual_financial_data.json",
+            "path": "raw_data/manual_financial_data.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "discussions_template.json",
+            "path": "raw_data/xueqiu_discussions/discussions_template.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "all_announcements.json",
+            "path": "raw_data/announcements/all_announcements.json",
+            "size_mb": 0.22
+          },
+          {
+            "name": "09992_泡泡玛特_二零二三年第一季度最新业务状况_1216471930.txt",
+            "path": "raw_data/q1_reports/09992_泡泡玛特_二零二三年第一季度最新业务状况_1216471930.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二二年第一季度最新业务状况_1213123860.txt",
+            "path": "raw_data/q1_reports/09992_泡泡玛特_二零二二年第一季度最新业务状况_1213123860.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二三年第一季度最新业务状况_1216471930.pdf",
+            "path": "raw_data/q1_reports/09992_泡泡玛特_二零二三年第一季度最新业务状况_1216471930.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_二零二二年第一季度最新业务状况_1213123860.pdf",
+            "path": "raw_data/q1_reports/09992_泡泡玛特_二零二二年第一季度最新业务状况_1213123860.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_二零二五年第一季度最新业务状况_1223212749.txt",
+            "path": "raw_data/q1_reports/09992_泡泡玛特_二零二五年第一季度最新业务状况_1223212749.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二五年第一季度最新业务状况_1223212749.pdf",
+            "path": "raw_data/q1_reports/09992_泡泡玛特_二零二五年第一季度最新业务状况_1223212749.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_截至2024年6月30日止六个月的中期业绩公告_1220924323.pdf",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2024年6月30日止六个月的中期业绩公告_1220924323.pdf",
+            "size_mb": 0.5
+          },
+          {
+            "name": "09992_泡泡玛特_截至2021年6月30日止六个月的中期业绩公布_1210890320.txt",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2021年6月30日止六个月的中期业绩公布_1210890320.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2025年6月30日止六个月的中期业绩公告_1224520521.txt",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2025年6月30日止六个月的中期业绩公告_1224520521.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2024年6月30日止六个月的中期业绩公告_1220924323.txt",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2024年6月30日止六个月的中期业绩公告_1220924323.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2025年6月30日止六个月的中期业绩公告_1224520521.pdf",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2025年6月30日止六个月的中期业绩公告_1224520521.pdf",
+            "size_mb": 0.52
+          },
+          {
+            "name": "09992_泡泡玛特_截至2021年6月30日止六个月的中期业绩公布_1210890320.pdf",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2021年6月30日止六个月的中期业绩公布_1210890320.pdf",
+            "size_mb": 0.46
+          },
+          {
+            "name": "09992_泡泡玛特_截至2022年6月30日止六个月的中期业绩公布_1214398337.txt",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2022年6月30日止六个月的中期业绩公布_1214398337.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2023年6月30日止六个月的中期业绩公布_1217607257.pdf",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2023年6月30日止六个月的中期业绩公布_1217607257.pdf",
+            "size_mb": 0.48
+          },
+          {
+            "name": "09992_泡泡玛特_截至2022年6月30日止六个月的中期业绩公布_1214398337.pdf",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2022年6月30日止六个月的中期业绩公布_1214398337.pdf",
+            "size_mb": 0.49
+          },
+          {
+            "name": "09992_泡泡玛特_截至2023年6月30日止六个月的中期业绩公布_1217607257.txt",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2023年6月30日止六个月的中期业绩公布_1217607257.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "hk_data_template.txt",
+            "path": "raw_data/financial_reports/hk_data_template.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_截至2020年12月31日止年度的年度业绩公布_1209461194.txt",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2020年12月31日止年度的年度业绩公布_1209461194.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2023年12月31日止年度的年度业绩公布_1219355830.pdf",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2023年12月31日止年度的年度业绩公布_1219355830.pdf",
+            "size_mb": 0.51
+          },
+          {
+            "name": "09992_泡泡玛特_截至2020年12月31日止年度的年度业绩公布_1209461194.pdf",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2020年12月31日止年度的年度业绩公布_1209461194.pdf",
+            "size_mb": 0.44
+          },
+          {
+            "name": "09992_泡泡玛特_截至2023年12月31日止年度的年度业绩公布_1219355830.txt",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2023年12月31日止年度的年度业绩公布_1219355830.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2021年12月31日止年度的年度业绩公布_1212702679.txt",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2021年12月31日止年度的年度业绩公布_1212702679.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2024年12月31日止年度的年度业绩公布_1222905266.txt",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2024年12月31日止年度的年度业绩公布_1222905266.txt",
+            "size_mb": 0.06
+          },
+          {
+            "name": "09992_泡泡玛特_截至2022年12月31日止年度的年度业绩公布_1216252614.pdf",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2022年12月31日止年度的年度业绩公布_1216252614.pdf",
+            "size_mb": 0.48
+          },
+          {
+            "name": "09992_泡泡玛特_截至2024年12月31日止年度的年度业绩公布_1222905266.pdf",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2024年12月31日止年度的年度业绩公布_1222905266.pdf",
+            "size_mb": 0.56
+          },
+          {
+            "name": "09992_泡泡玛特_截至2022年12月31日止年度的年度业绩公布_1216252614.txt",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2022年12月31日止年度的年度业绩公布_1216252614.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2021年12月31日止年度的年度业绩公布_1212702679.pdf",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2021年12月31日止年度的年度业绩公布_1212702679.pdf",
+            "size_mb": 0.47
+          },
+          {
+            "name": "09992_泡泡玛特_二零二三年第三季度最新业务状况_1218132064.pdf",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二三年第三季度最新业务状况_1218132064.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_二零二四年第三季度最新业务状况_1221473231.pdf",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二四年第三季度最新业务状况_1221473231.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_二零二五年第三季度最新业务状况_1224722715.txt",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二五年第三季度最新业务状况_1224722715.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二一年第三季度最新业务状况_1211459387.txt",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二一年第三季度最新业务状况_1211459387.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二三年第三季度最新业务状况_1218132064.txt",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二三年第三季度最新业务状况_1218132064.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二四年第三季度最新业务状况_1221473231.txt",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二四年第三季度最新业务状况_1221473231.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二五年第三季度最新业务状况_1224722715.pdf",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二五年第三季度最新业务状况_1224722715.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_二零二一年第三季度最新业务状况_1211459387.pdf",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二一年第三季度最新业务状况_1211459387.pdf",
+            "size_mb": 0.13
+          },
+          {
+            "name": "09992_泡泡玛特_二零二二年第三季度最新业务状况_1214903422.pdf",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二二年第三季度最新业务状况_1214903422.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_二零二二年第三季度最新业务状况_1214903422.txt",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二二年第三季度最新业务状况_1214903422.txt",
+            "size_mb": 0.0
+          }
+        ]
+      },
+      "processed_data": {
+        "file_count": 10,
+        "total_size_mb": 0.09,
+        "files": [
+          {
+            "name": "xueqiu_sentiment.json",
+            "path": "processed_data/xueqiu_sentiment.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "financial_index.json",
+            "path": "processed_data/financial_index.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "xueqiu_analysis.json",
+            "path": "processed_data/xueqiu_analysis.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "financial_index_summary.txt",
+            "path": "processed_data/financial_index_summary.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "all_announcements.json",
+            "path": "processed_data/all_announcements.json",
+            "size_mb": 0.08
+          },
+          {
+            "name": "download_summary.json",
+            "path": "processed_data/download_summary.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "industry_info.json",
+            "path": "processed_data/industry_info.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "financial_statements.json",
+            "path": "processed_data/financial_statements.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "all_data.json",
+            "path": "processed_data/all_data.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "company_info.json",
+            "path": "processed_data/company_info.json",
+            "size_mb": 0.0
+          }
+        ]
+      },
+      "reports": {
+        "file_count": 52,
+        "total_size_mb": 6.74,
+        "files": [
+          {
+            "name": "analysis_prompt.txt",
+            "path": "analysis_prompt.txt",
+            "size_mb": 0.01
+          },
+          {
+            "name": "analysis_report.md",
+            "path": "analysis_report.md",
+            "size_mb": 0.03
+          },
+          {
+            "name": "manual_financial_data.json",
+            "path": "raw_data/manual_financial_data.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "xueqiu_sentiment.json",
+            "path": "processed_data/xueqiu_sentiment.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "financial_index.json",
+            "path": "processed_data/financial_index.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "xueqiu_analysis.json",
+            "path": "processed_data/xueqiu_analysis.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "financial_index_summary.txt",
+            "path": "processed_data/financial_index_summary.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "all_announcements.json",
+            "path": "processed_data/all_announcements.json",
+            "size_mb": 0.08
+          },
+          {
+            "name": "download_summary.json",
+            "path": "processed_data/download_summary.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "industry_info.json",
+            "path": "processed_data/industry_info.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "financial_statements.json",
+            "path": "processed_data/financial_statements.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "all_data.json",
+            "path": "processed_data/all_data.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "company_info.json",
+            "path": "processed_data/company_info.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "discussions_template.json",
+            "path": "raw_data/xueqiu_discussions/discussions_template.json",
+            "size_mb": 0.0
+          },
+          {
+            "name": "all_announcements.json",
+            "path": "raw_data/announcements/all_announcements.json",
+            "size_mb": 0.22
+          },
+          {
+            "name": "09992_泡泡玛特_二零二三年第一季度最新业务状况_1216471930.txt",
+            "path": "raw_data/q1_reports/09992_泡泡玛特_二零二三年第一季度最新业务状况_1216471930.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二二年第一季度最新业务状况_1213123860.txt",
+            "path": "raw_data/q1_reports/09992_泡泡玛特_二零二二年第一季度最新业务状况_1213123860.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二三年第一季度最新业务状况_1216471930.pdf",
+            "path": "raw_data/q1_reports/09992_泡泡玛特_二零二三年第一季度最新业务状况_1216471930.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_二零二二年第一季度最新业务状况_1213123860.pdf",
+            "path": "raw_data/q1_reports/09992_泡泡玛特_二零二二年第一季度最新业务状况_1213123860.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_二零二五年第一季度最新业务状况_1223212749.txt",
+            "path": "raw_data/q1_reports/09992_泡泡玛特_二零二五年第一季度最新业务状况_1223212749.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二五年第一季度最新业务状况_1223212749.pdf",
+            "path": "raw_data/q1_reports/09992_泡泡玛特_二零二五年第一季度最新业务状况_1223212749.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_截至2024年6月30日止六个月的中期业绩公告_1220924323.pdf",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2024年6月30日止六个月的中期业绩公告_1220924323.pdf",
+            "size_mb": 0.5
+          },
+          {
+            "name": "09992_泡泡玛特_截至2021年6月30日止六个月的中期业绩公布_1210890320.txt",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2021年6月30日止六个月的中期业绩公布_1210890320.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2025年6月30日止六个月的中期业绩公告_1224520521.txt",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2025年6月30日止六个月的中期业绩公告_1224520521.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2024年6月30日止六个月的中期业绩公告_1220924323.txt",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2024年6月30日止六个月的中期业绩公告_1220924323.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2025年6月30日止六个月的中期业绩公告_1224520521.pdf",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2025年6月30日止六个月的中期业绩公告_1224520521.pdf",
+            "size_mb": 0.52
+          },
+          {
+            "name": "09992_泡泡玛特_截至2021年6月30日止六个月的中期业绩公布_1210890320.pdf",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2021年6月30日止六个月的中期业绩公布_1210890320.pdf",
+            "size_mb": 0.46
+          },
+          {
+            "name": "09992_泡泡玛特_截至2022年6月30日止六个月的中期业绩公布_1214398337.txt",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2022年6月30日止六个月的中期业绩公布_1214398337.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2023年6月30日止六个月的中期业绩公布_1217607257.pdf",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2023年6月30日止六个月的中期业绩公布_1217607257.pdf",
+            "size_mb": 0.48
+          },
+          {
+            "name": "09992_泡泡玛特_截至2022年6月30日止六个月的中期业绩公布_1214398337.pdf",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2022年6月30日止六个月的中期业绩公布_1214398337.pdf",
+            "size_mb": 0.49
+          },
+          {
+            "name": "09992_泡泡玛特_截至2023年6月30日止六个月的中期业绩公布_1217607257.txt",
+            "path": "raw_data/semi_annual_reports/09992_泡泡玛特_截至2023年6月30日止六个月的中期业绩公布_1217607257.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "hk_data_template.txt",
+            "path": "raw_data/financial_reports/hk_data_template.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_截至2020年12月31日止年度的年度业绩公布_1209461194.txt",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2020年12月31日止年度的年度业绩公布_1209461194.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2023年12月31日止年度的年度业绩公布_1219355830.pdf",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2023年12月31日止年度的年度业绩公布_1219355830.pdf",
+            "size_mb": 0.51
+          },
+          {
+            "name": "09992_泡泡玛特_截至2020年12月31日止年度的年度业绩公布_1209461194.pdf",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2020年12月31日止年度的年度业绩公布_1209461194.pdf",
+            "size_mb": 0.44
+          },
+          {
+            "name": "09992_泡泡玛特_截至2023年12月31日止年度的年度业绩公布_1219355830.txt",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2023年12月31日止年度的年度业绩公布_1219355830.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2021年12月31日止年度的年度业绩公布_1212702679.txt",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2021年12月31日止年度的年度业绩公布_1212702679.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2024年12月31日止年度的年度业绩公布_1222905266.txt",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2024年12月31日止年度的年度业绩公布_1222905266.txt",
+            "size_mb": 0.06
+          },
+          {
+            "name": "09992_泡泡玛特_截至2022年12月31日止年度的年度业绩公布_1216252614.pdf",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2022年12月31日止年度的年度业绩公布_1216252614.pdf",
+            "size_mb": 0.48
+          },
+          {
+            "name": "09992_泡泡玛特_截至2024年12月31日止年度的年度业绩公布_1222905266.pdf",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2024年12月31日止年度的年度业绩公布_1222905266.pdf",
+            "size_mb": 0.56
+          },
+          {
+            "name": "09992_泡泡玛特_截至2022年12月31日止年度的年度业绩公布_1216252614.txt",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2022年12月31日止年度的年度业绩公布_1216252614.txt",
+            "size_mb": 0.05
+          },
+          {
+            "name": "09992_泡泡玛特_截至2021年12月31日止年度的年度业绩公布_1212702679.pdf",
+            "path": "raw_data/annual_reports/09992_泡泡玛特_截至2021年12月31日止年度的年度业绩公布_1212702679.pdf",
+            "size_mb": 0.47
+          },
+          {
+            "name": "09992_泡泡玛特_二零二三年第三季度最新业务状况_1218132064.pdf",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二三年第三季度最新业务状况_1218132064.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_二零二四年第三季度最新业务状况_1221473231.pdf",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二四年第三季度最新业务状况_1221473231.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_二零二五年第三季度最新业务状况_1224722715.txt",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二五年第三季度最新业务状况_1224722715.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二一年第三季度最新业务状况_1211459387.txt",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二一年第三季度最新业务状况_1211459387.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二三年第三季度最新业务状况_1218132064.txt",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二三年第三季度最新业务状况_1218132064.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二四年第三季度最新业务状况_1221473231.txt",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二四年第三季度最新业务状况_1221473231.txt",
+            "size_mb": 0.0
+          },
+          {
+            "name": "09992_泡泡玛特_二零二五年第三季度最新业务状况_1224722715.pdf",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二五年第三季度最新业务状况_1224722715.pdf",
+            "size_mb": 0.12
+          },
+          {
+            "name": "09992_泡泡玛特_二零二一年第三季度最新业务状况_1211459387.pdf",
+            "path": "raw_data/q3_reports/09992_泡泡玛特_二零二一年第三季度最新业务状况_1211459387.pdf",
+            "size_mb": 0.13
+          }
+        ]
+      }
+    }
+  },
+  "metadata": {
+    "company_code": "09992.HK",
+    "analysis_date": "2026-01-26T22:35:55.251324",
+    "summary_version": "1.0",
+    "analysis_dir": "company_analysis_09992.HK_20260126"
+  }
+}
