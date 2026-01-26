@@ -26,6 +26,8 @@
 - **行业分析**：市场空间、竞争格局、公司地位
 - **风险评估**：财务风险 + 市场情绪风险
 - **投资建议**：基于全面分析的投资建议
+- **🆕 知识总结和归档**：自动生成分析摘要并压缩数据（节省70-90%空间）
+- **🆕 快速学习**：从之前的分析中快速加载知识，支持公司对比
 
 ### 🎯 分析框架
 
@@ -77,7 +79,17 @@ ln -s $(pwd) ~/.claude/skills/company-financial-analysis
 
 #### 使用方法
 
-**方式一：快速分析（自动模式）**
+**方式一：一键完成分析（推荐）** 🆕
+
+自动完成数据收集、分析、总结、归档：
+
+```bash
+cd ~/.claude/skills/company-financial-analysis/scripts
+python3 analyze_and_summarize.py 09992  # 泡泡玛特
+python3 analyze_and_summarize.py 600519  # 贵州茅台
+```
+
+**方式二：快速分析（自动模式）**
 
 适合 A 股公司，使用 AkShare API 自动获取数据：
 
@@ -88,7 +100,7 @@ ln -s $(pwd) ~/.claude/skills/company-financial-analysis
 帮我分析 600519
 ```
 
-**方式二：精确分析（手动模式）** ⭐ 推荐
+**方式三：精确分析（手动模式）**
 
 适合需要最新数据或港股公司：
 
@@ -191,7 +203,62 @@ PyPDF2>=3.0.0  # 可选，用于 PDF 解析
 
 无需额外配置，开箱即用。
 
+### 🆕 新功能：知识管理
+
+#### 知识总结和归档
+
+分析完成后，自动生成知识摘要并压缩数据：
+
+```bash
+cd ~/.claude/skills/company-financial-analysis/scripts
+
+# 手动运行（分析完成后）
+python3 summarize_and_archive.py company_analysis_09992.HK_20260126
+
+# 或使用一键命令（推荐）
+python3 analyze_and_summarize.py 09992
+```
+
+**生成的文件**：
+- `knowledge_summary.json` - 结构化摘要
+- `KNOWLEDGE_SUMMARY.md` - 可读摘要
+- `LEARNING_SUMMARY.md` - 学习摘要（用于Claude上下文）
+- `<code>_raw_data_<date>.tar.gz` - 压缩的原始数据（节省70-90%空间）
+- `company_index.json` - 全局公司索引
+
+#### 快速学习
+
+从之前的分析中快速加载知识：
+
+```bash
+cd ~/.claude/skills/company-financial-analysis/scripts
+
+# 列出所有已分析的公司
+python3 quick_learn.py list
+
+# 加载特定公司知识
+python3 quick_learn.py load 09992.HK
+
+# 对比多家公司
+python3 quick_learn.py compare 09992.HK 00700.HK
+
+# 生成学习摘要
+python3 quick_learn.py summary 09992.HK
+
+# 搜索公司
+python3 quick_learn.py search 泡泡
+```
+
+**详细文档**: 查看 [NEW_FEATURES.md](NEW_FEATURES.md) 了解完整使用指南
+
 ### 📝 更新日志
+
+#### v2.2 (2026-01-26) 🆕
+- ✅ 新增知识总结和归档功能
+- ✅ 新增快速学习功能
+- ✅ 支持公司对比分析
+- ✅ 自动压缩数据节省空间
+- ✅ 全局公司索引
 
 #### v2.1 (2026-01-26)
 - ✅ 新增手动数据输入功能

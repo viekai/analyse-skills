@@ -1,0 +1,28 @@
+{
+  "09992.HK": {
+    "company_code": "09992.HK",
+    "company_name": "",
+    "market": "HK",
+    "analysis_date": "2026-01-26T22:35:55.424710",
+    "analysis_dir": "company_analysis_09992.HK_20260126",
+    "summary_file": "company_analysis_09992.HK_20260126/knowledge_summary.json",
+    "report_file": "company_analysis_09992.HK_20260126/analysis_report.md",
+    "years_covered": [
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+    ],
+    "key_investment_points": [
+      "超预期增长延续",
+      "2024年爆发式增长",
+      "全球化加速",
+      "盈利能力持续提升",
+      "IP驱动模式",
+      "现金流充沛"
+    ],
+    "file_count": 102,
+    "total_size_mb": 13.45
+  }
+}

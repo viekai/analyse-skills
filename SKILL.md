@@ -77,6 +77,56 @@ Present the analysis report to the user, highlighting:
 - Critical risks
 - Investment recommendation
 
+### Step 5: Knowledge Summarization and Archiving (NEW!)
+
+After completing the analysis, automatically generate knowledge summary and archive data:
+
+```bash
+cd company-financial-analysis/scripts
+python3 summarize_and_archive.py <analysis_directory>
+```
+
+**What this does:**
+1. Generates `knowledge_summary.json` - Structured summary for quick loading
+2. Generates `KNOWLEDGE_SUMMARY.md` - Human-readable summary
+3. Creates `company_index.json` - Global index of all analyzed companies
+4. Compresses raw data to `.tar.gz` archive (optional: delete originals to save space)
+
+**Or use the all-in-one command:**
+```bash
+python3 analyze_and_summarize.py <stock_code>
+```
+
+This runs the full pipeline: data collection → analysis → summarization → archiving
+
+### Step 6: Quick Learning from Previous Analysis (NEW!)
+
+Load knowledge from previously analyzed companies:
+
+```bash
+cd company-financial-analysis/scripts
+
+# List all analyzed companies
+python3 quick_learn.py list
+
+# Load specific company knowledge
+python3 quick_learn.py load 09992.HK
+
+# Compare multiple companies
+python3 quick_learn.py compare 09992.HK 00700.HK
+
+# Generate learning summary (for Claude context)
+python3 quick_learn.py summary 09992.HK
+
+# Search companies
+python3 quick_learn.py search 泡泡
+```
+
+**Benefits:**
+- Fast context loading for follow-up questions
+- Company comparison without re-downloading data
+- Efficient knowledge reuse across sessions
+
 ## Analysis Framework
 
 ### DuPont Analysis
@@ -112,8 +162,34 @@ company_analysis_<code>_<date>/
 │   ├── important_announcements.json     # 重要公告
 │   └── download_summary.json            # 下载摘要
 ├── analysis_prompt.txt                  # AI分析提示词
-└── analysis_report.md                   # 最终分析报告
+├── analysis_report.md                   # 最终分析报告
+├── knowledge_summary.json               # 知识摘要 (NEW!)
+├── KNOWLEDGE_SUMMARY.md                 # 可读摘要 (NEW!)
+├── LEARNING_SUMMARY.md                  # 学习摘要 (NEW!)
+└── <code>_raw_data_<date>.tar.gz       # 压缩的原始数据 (NEW!)
 ```
+
+## New Features
+
+### 1. Knowledge Summarization
+
+After analysis, the system automatically generates:
+- **knowledge_summary.json**: Structured summary with metadata, financial highlights, report sections
+- **KNOWLEDGE_SUMMARY.md**: Human-readable markdown summary
+- **company_index.json**: Global index in scripts/ directory for quick lookup
+
+### 2. Data Archiving
+
+- Compresses raw_data/ to `.tar.gz` (typically 70-90% size reduction)
+- Option to keep or delete original files
+- Preserves all data for future reference
+
+### 3. Quick Learning
+
+- Load previous analysis instantly without re-downloading
+- Compare multiple companies side-by-side
+- Generate learning summaries optimized for Claude context
+- Search across all analyzed companies
 
 ## Reference Files
 
