@@ -1,156 +1,364 @@
 #!/usr/bin/env python3
 """
-Main analysis script - orchestrates data collection and AI analysis
+公司财务分析主脚本
+
+数据获取方式：
+- A股：从巨潮资讯网下载财报和公告（年报+季报）
+- 港股：从港交所披露易下载财报和公告（年报+季报）
+- 财务数据只从下载的财报PDF中提取，不从网上搜索
+- 市场反馈从雪球讨论中爬取
+
+分析流程：
+1. 下载近5年年报和季报
+2. 下载近5年所有公告
+3. 从财报中提取财务数据（带来源标注）
+4. 生成核心指标表格
+5. 爬取雪球讨论
+6. 生成分析报告
 """
 import sys
 import os
 from pathlib import Path
 import json
+import shutil
+from datetime import datetime
 
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+# 默认报告输出目录
+DEFAULT_REPORTS_DIR = Path.home() / 'Desktop' / 'reports'
+
 from utils import create_output_directory, normalize_stock_code, save_json, load_json
-import fetch_financial_data
-import fetch_financial_from_reports
-import fetch_announcements
-import fetch_industry_data
-import fetch_xueqiu_discussions
 
 
-def collect_all_data(stock_code: str, output_dir: Path) -> dict:
-    """Collect all data from various sources"""
+def save_report_to_desktop(source_report: Path, stock_code: str, reports_dir: Path = None) -> Path:
+    """
+    将分析报告保存到桌面报告目录
+
+    Args:
+        source_report: 源报告路径
+        stock_code: 股票代码
+        reports_dir: 报告目录，默认 ~/Desktop/reports/
+
+    Returns:
+        目标报告路径
+    """
+    if reports_dir is None:
+        reports_dir = DEFAULT_REPORTS_DIR
+
+    # 创建报告目录
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    # 生成报告文件名: {stock_code}_{date}_analysis.md
+    date_str = datetime.now().strftime('%Y%m%d')
+    report_name = f"{stock_code}_{date_str}_analysis.md"
+    target_path = reports_dir / report_name
+
+    # 复制报告
+    if source_report.exists():
+        shutil.copy2(source_report, target_path)
+        print(f"  ✓ 报告已保存到: {target_path}")
+        return target_path
+    else:
+        print(f"  ✗ 源报告不存在: {source_report}")
+        return None
+
+
+def download_reports(stock_code: str, output_dir: Path, years: int = 5) -> dict:
+    """
+    下载年报、季报和公告
+
+    Args:
+        stock_code: 股票代码
+        output_dir: 输出目录
+        years: 下载最近几年的数据
+    """
     print("\n" + "="*80)
-    print("PHASE 1: DATA COLLECTION")
+    print("阶段 1: 下载财报和公告（含季报）")
     print("="*80 + "\n")
 
-    all_data = {}
-
-    # 1. Fetch financial data
     try:
-        financial_data = fetch_financial_data.main(stock_code, output_dir)
-        all_data['financial'] = financial_data
-        company_info = financial_data.get('company_info', {})
-
-        # 1.5 Try to enhance with manual/report data
-        print("\n" + "="*60)
-        print("Checking for enhanced financial data...")
-        print("="*60 + "\n")
-        try:
-            # Get the last 5 years
-            from datetime import datetime
-            current_year = datetime.now().year
-            years = list(range(current_year - 5, current_year))
-
-            enhanced_data = fetch_financial_from_reports.main(stock_code, output_dir, years)
-            if enhanced_data:
-                all_data['enhanced_financial'] = enhanced_data
-                print("✓ Enhanced financial data loaded successfully\n")
-            else:
-                print("ℹ Manual financial data template created")
-                print("  Please fill in the template for more accurate analysis\n")
-        except Exception as e:
-            print(f"Note: Enhanced data collection skipped: {e}\n")
+        from fetch_reports import download_reports_and_announcements
+        result = download_reports_and_announcements(stock_code, output_dir, years)
+        return result
     except Exception as e:
-        print(f"Error fetching financial data: {e}")
-        company_info = {}
+        print(f"下载失败: {e}")
+        return {
+            'stock_code': stock_code,
+            'annual_reports': [],
+            'quarterly_reports': {},
+            'announcements': [],
+        }
 
-    # 2. Fetch announcements
+
+def extract_financial_data(stock_code: str, output_dir: Path) -> dict:
+    """
+    从年报PDF中提取财务数据
+
+    Args:
+        stock_code: 股票代码
+        output_dir: 输出目录
+    """
+    print("\n" + "="*80)
+    print("阶段 2: 从年报中提取财务数据")
+    print("="*80 + "\n")
+
     try:
-        announcements = fetch_announcements.main(stock_code, output_dir)
-        all_data['announcements'] = announcements
+        from fetch_financial_from_reports import main as extract_from_reports
+        financial_data = extract_from_reports(stock_code, output_dir)
+        return financial_data
     except Exception as e:
-        print(f"Error fetching announcements: {e}")
-        all_data['announcements'] = []
+        print(f"提取财务数据失败: {e}")
+        return {}
 
-    # 3. Fetch industry data
+
+def fetch_industry_data(stock_code: str, output_dir: Path) -> dict:
+    """
+    获取行业数据
+
+    Args:
+        stock_code: 股票代码
+        output_dir: 输出目录
+    """
+    print("\n" + "="*80)
+    print("阶段 3: 获取行业数据")
+    print("="*80 + "\n")
+
     try:
-        industry_name = company_info.get('industry', '')
-        if industry_name:
-            industry_data = fetch_industry_data.main(stock_code, industry_name, output_dir)
-            all_data['industry'] = industry_data
+        from fetch_industry_data import main as fetch_industry
+        industry_data = fetch_industry(stock_code, "", output_dir)
+        return industry_data
     except Exception as e:
-        print(f"Error fetching industry data: {e}")
-        all_data['industry'] = {}
+        print(f"获取行业数据失败: {e}")
+        return {}
 
-    # 4. Fetch Xueqiu discussions
+
+def generate_metrics_tables(output_dir: Path) -> bool:
+    """
+    生成核心指标表格
+
+    Args:
+        output_dir: 输出目录
+
+    Returns:
+        是否成功
+    """
+    print("\n" + "="*80)
+    print("阶段 2.6: 生成核心指标表格")
+    print("="*80 + "\n")
+
     try:
-        xueqiu_data = fetch_xueqiu_discussions.main(stock_code, output_dir)
-        all_data['xueqiu'] = xueqiu_data
+        from generate_metrics_table import main as generate_tables
+        return generate_tables(output_dir)
     except Exception as e:
-        print(f"Error fetching Xueqiu data: {e}")
-        all_data['xueqiu'] = {}
+        print(f"生成指标表格失败: {e}")
+        return False
 
-    # Save consolidated data
-    save_json(all_data, output_dir / 'processed_data' / 'all_data.json')
 
-    return all_data
+def fetch_xueqiu_data(stock_code: str, output_dir: Path, max_pages: int = 5) -> dict:
+    """
+    爬取雪球讨论
+
+    Args:
+        stock_code: 股票代码
+        output_dir: 输出目录
+        max_pages: 最大爬取页数
+
+    Returns:
+        分析结果
+    """
+    print("\n" + "="*80)
+    print("阶段 4: 爬取雪球讨论")
+    print("="*80 + "\n")
+
+    try:
+        from fetch_xueqiu_discussions import main as fetch_xueqiu
+        return fetch_xueqiu(stock_code, output_dir, max_pages)
+    except Exception as e:
+        print(f"爬取雪球讨论失败: {e}")
+        return {}
 
 
 def prepare_analysis_context(output_dir: Path) -> str:
-    """Prepare context for AI analysis"""
+    """
+    准备AI分析上下文（精简版）
+
+    优化：不再嵌入大量JSON数据，改为提供文件路径和工具使用说明
+    """
     context_parts = []
 
-    # Load all processed data
+    # 1. 公司基本信息（保留，很小）
     try:
         company_info = load_json(output_dir / 'processed_data' / 'company_info.json')
-        context_parts.append(f"## Company Information\n{json.dumps(company_info, ensure_ascii=False, indent=2)}")
+        context_parts.append(f"## 公司基本信息\n{json.dumps(company_info, ensure_ascii=False)}")
     except:
         pass
 
+    # 2. 数据文件位置说明
+    reports_dir = output_dir / 'raw_data' / 'annual_reports'
+    txt_files = list(reports_dir.glob('*.txt')) if reports_dir.exists() else []
+
+    # 列出所有季度报告目录
+    quarterly_dirs = ['semi_annual_reports', 'q1_reports', 'q3_reports']
+    quarterly_info = []
+    for dir_name in quarterly_dirs:
+        dir_path = output_dir / 'raw_data' / dir_name
+        if dir_path.exists():
+            pdf_count = len(list(dir_path.glob('*.pdf')))
+            if pdf_count > 0:
+                quarterly_info.append(f"  - {dir_name}: {pdf_count} 份")
+
+    context_parts.append(f"""## 数据文件位置
+
+### 年报文本文件（可使用grep搜索）
+目录: `{reports_dir}`
+""")
+
+    if txt_files:
+        for txt_file in sorted(txt_files):
+            size_kb = txt_file.stat().st_size / 1024
+            context_parts[-1] += f"- `{txt_file.name}` ({size_kb:.0f} KB)\n"
+    else:
+        context_parts[-1] += "- 暂无文本文件\n"
+
+    if quarterly_info:
+        context_parts[-1] += f"\n### 季度报告\n" + "\n".join(quarterly_info)
+
+    # 3. 核心指标表格（优先展示）
     try:
-        indicators = load_json(output_dir / 'processed_data' / 'financial_indicators.json')
-        # Limit to last 5 years
-        if indicators and len(indicators) > 20:
-            indicators = indicators[:20]
-        context_parts.append(f"## Financial Indicators (Recent)\n{json.dumps(indicators, ensure_ascii=False, indent=2)}")
+        metrics_md_path = output_dir / 'processed_data' / 'metrics_tables.md'
+        if metrics_md_path.exists():
+            with open(metrics_md_path, 'r', encoding='utf-8') as f:
+                metrics_content = f.read()
+            context_parts.append(metrics_content)
     except:
         pass
 
-    # Try to load enhanced DuPont indicators if available
+    # 4. 索引摘要（如果存在）
     try:
-        dupont_indicators = load_json(output_dir / 'processed_data' / 'dupont_indicators.json')
-        if dupont_indicators:
-            context_parts.append(f"## DuPont Analysis Indicators (5 Years)\n{json.dumps(dupont_indicators, ensure_ascii=False, indent=2)}")
+        index_summary_path = output_dir / 'processed_data' / 'financial_index_summary.txt'
+        if index_summary_path.exists():
+            with open(index_summary_path, 'r', encoding='utf-8') as f:
+                index_summary = f.read()
+            context_parts.append(f"## 财务指标索引\n{index_summary}")
     except:
         pass
 
+    # 5. 公告统计信息（不嵌入完整数据）
     try:
-        announcements = load_json(output_dir / 'processed_data' / 'important_announcements.json')
-        # Limit to top 20
-        if announcements and len(announcements) > 20:
-            announcements = announcements[:20]
-        context_parts.append(f"## Important Announcements\n{json.dumps(announcements, ensure_ascii=False, indent=2)}")
+        all_announcements = load_json(output_dir / 'processed_data' / 'all_announcements.json')
+        if all_announcements:
+            # 只提供统计信息和文件路径
+            announcements_file = output_dir / 'processed_data' / 'all_announcements.json'
+            context_parts.append(f"""## 公告数据
+- 公告总数: {len(all_announcements)} 条
+- 数据文件: `{announcements_file}`
+- 使用方法: 读取JSON文件获取公告列表，每条公告包含 title, date, type 等字段""")
     except:
         pass
 
+    # 6. 重要公告列表（只保留标题和日期）
+    try:
+        important_announcements = load_json(output_dir / 'processed_data' / 'important_announcements.json')
+        if important_announcements:
+            # 精简为只包含标题和日期
+            brief_list = []
+            for ann in important_announcements[:20]:  # 最多20条
+                brief_list.append(f"- [{ann.get('date', 'N/A')}] {ann.get('title', 'N/A')}")
+            context_parts.append(f"## 重要公告摘要（共{len(important_announcements)}条）\n" + "\n".join(brief_list))
+    except:
+        pass
+
+    # 7. 行业信息（保留，通常很小）
     try:
         industry_info = load_json(output_dir / 'processed_data' / 'industry_info.json')
-        context_parts.append(f"## Industry Information\n{json.dumps(industry_info, ensure_ascii=False, indent=2)}")
+        if industry_info:
+            context_parts.append(f"## 行业信息\n{json.dumps(industry_info, ensure_ascii=False)}")
     except:
         pass
 
+    # 8. 雪球讨论分析
     try:
-        peer_financials = load_json(output_dir / 'processed_data' / 'peer_financials.json')
-        context_parts.append(f"## Peer Company Financials\n{json.dumps(peer_financials, ensure_ascii=False, indent=2)}")
-    except:
-        pass
+        xueqiu_analysis = load_json(output_dir / 'processed_data' / 'xueqiu_analysis.json')
+        if xueqiu_analysis and not xueqiu_analysis.get('error'):
+            sentiment = xueqiu_analysis.get('sentiment', {})
+            xueqiu_summary = f"""## 雪球市场反馈
 
-    try:
-        xueqiu_sentiment = load_json(output_dir / 'processed_data' / 'xueqiu_sentiment.json')
-        context_parts.append(f"## Xueqiu Market Sentiment\n{json.dumps(xueqiu_sentiment, ensure_ascii=False, indent=2)}")
+**数据采集时间**: {xueqiu_analysis.get('fetch_time', 'N/A')}
+**讨论总数**: {xueqiu_analysis.get('total_discussions', 0)}
+
+### 情感分布
+- 看多: {sentiment.get('positive', 0)}
+- 看空: {sentiment.get('negative', 0)}
+- 中性: {sentiment.get('neutral', 0)}
+- **情感得分**: {sentiment.get('score', 0)} (-1悲观 ~ 1乐观)
+
+### 主要看多观点
+"""
+            bullish = xueqiu_analysis.get('key_opinions', {}).get('bullish', [])[:5]
+            for op in bullish:
+                xueqiu_summary += f"- {op.get('content', '')[:100]}... (赞:{op.get('likes', 0)})\n"
+
+            xueqiu_summary += "\n### 主要看空/风险观点\n"
+            bearish = xueqiu_analysis.get('key_opinions', {}).get('bearish', [])[:5]
+            for op in bearish:
+                xueqiu_summary += f"- {op.get('content', '')[:100]}... (赞:{op.get('likes', 0)})\n"
+
+            if xueqiu_analysis.get('risk_mentions'):
+                xueqiu_summary += "\n### 风险相关讨论\n"
+                for risk in xueqiu_analysis.get('risk_mentions', [])[:5]:
+                    xueqiu_summary += f"- {risk.get('content', '')[:100]}...\n"
+
+            context_parts.append(xueqiu_summary)
     except:
         pass
 
     return "\n\n".join(context_parts)
 
 
-def generate_analysis_prompt(company_name: str, stock_code: str, context: str) -> str:
-    """Generate prompt for AI analysis"""
+def generate_analysis_prompt(company_name: str, stock_code: str, context: str, output_dir: Path = None) -> str:
+    """生成AI分析提示词（优化版：按需读取模式）"""
+
+    # 构建数据访问说明
+    data_access_guide = ""
+    if output_dir:
+        reports_dir = output_dir / 'raw_data' / 'annual_reports'
+        data_access_guide = f"""
+## 数据访问方式
+
+财务数据已保存为可搜索的文本格式。请使用工具按需查询，而不是一次性读取所有内容。
+
+### 搜索指南
+
+**查找财务指标**（使用grep搜索年报文本）:
+- 营收相关: `grep "营业收入|营业总收入|Revenue" {reports_dir}/*.txt`
+- 利润相关: `grep "净利润|归属于.*净利润|Net Profit" {reports_dir}/*.txt`
+- 资产相关: `grep "总资产|资产总计|Total Assets" {reports_dir}/*.txt`
+- 比率指标: `grep "毛利率|净利率|ROE|净资产收益率" {reports_dir}/*.txt`
+
+**读取详细内容**:
+- 使用 Read 工具读取特定文本文件
+- 根据索引中的行号定位具体数据
+- 每次只读取需要的部分，避免加载过多内容
+
+### 分析流程建议
+
+1. 先阅读财务指标索引，了解数据位置
+2. 使用 grep 搜索关键指标
+3. 读取相关上下文获取详细数据
+4. 引用数据时注明来源年份和页码
+"""
+
     prompt = f"""# 投资分析任务
 
-请基于以下数据，为 {company_name} ({stock_code}) 生成一份专业的投资分析报告。
+请为 {company_name} ({stock_code}) 生成一份专业的投资分析报告。
 
+**重要说明**：
+- 所有财务数据均来源于公司年报
+- 请使用工具按需搜索和读取数据，不要假设数据内容
+- 引用数据时注明来源（年份、页码）
+{data_access_guide}
 ## 分析框架
 
 ### 1. 执行摘要
@@ -167,16 +375,15 @@ def generate_analysis_prompt(company_name: str, stock_code: str, context: str) -
 ### 3. 行业分析
 #### 3.1 行业定位
 - 所属行业及细分领域
-- 行业分类（申万行业）
+- 行业分类
 
 #### 3.2 行业空间与增长
-- 行业市场规模（TAM）
-- 行业增长趋势（历史CAGR）
+- 行业市场规模
+- 行业增长趋势
 - 行业驱动因素
-- 行业周期性特征
 
 #### 3.3 竞争格局
-- 行业集中度（CR5）
+- 行业集中度
 - 主要竞争对手
 - 竞争态势
 
@@ -196,11 +403,9 @@ def generate_analysis_prompt(company_name: str, stock_code: str, context: str) -
 
 #### 4.3 收入模式
 - 收入来源结构
-- 收入模式类型（一次性/订阅/佣金等）
 - 收入稳定性
 
 #### 4.4 成本结构
-- 固定成本 vs 变动成本
 - 主要成本项
 - 成本优化空间
 
@@ -209,67 +414,58 @@ def generate_analysis_prompt(company_name: str, stock_code: str, context: str) -
 - 品牌壁垒
 - 规模经济
 - 网络效应
-- 其他护城河
-
-#### 4.6 商业模式评估
-- 可持续性
-- 可扩展性
-- 盈利能力
 
 ### 5. 财务分析（杜邦分析框架）
+
+**核心公式**: ROE = 净利率 × 资产周转率 × 权益乘数
+
 #### 5.1 ROE 总览
 - ROE 历史趋势（5年）
-- ROE 行业对比
 - ROE 驱动因素分解
 
 #### 5.2 盈利能力分析（净利率）
-- 毛利率趋势及分析
-- 期间费用率（销售/管理/研发/财务）
+- 毛利率趋势
 - 净利率趋势
 - 净利率与商业模式的关系
 
 #### 5.3 运营效率分析（资产周转率）
-- 应收账款周转率
-- 存货周转率
-- 总资产周转率
+- 资产周转率趋势
 - 周转率与商业模式的关系
 
 #### 5.4 财务杠杆分析（权益乘数）
 - 资产负债率
-- 有息负债率
 - 杠杆水平评估
-- 杠杆与商业模式的关系
 
 #### 5.5 现金流质量分析
 - 经营现金流 vs 净利润
-- 自由现金流
 - 现金流稳定性
 
-#### 5.6 成长性分析
-- 营收增长率（CAGR）
-- 利润增长率
-- 成长驱动因素
+### 6. 公告分析
+基于近5年的公司公告，分析：
+- 重大事项（并购、重组、诉讼等）
+- 业绩变化趋势
+- 管理层变动
+- 股东行为（增减持、质押等）
+- 潜在风险信号
 
-### 6. 风险分析
-#### 6.1 财务风险
-- 偿债能力风险（流动比率、速动比率）
+### 7. 风险分析
+#### 7.1 财务风险
+- 偿债能力风险
 - 现金流风险
 - 应收账款风险
 - 商誉减值风险
-- 债务到期压力
 
-#### 6.2 市场情绪风险（基于雪球讨论）
-- 负面观点汇总
-- 主要争议点
-- 投资者关注的风险点
+#### 7.2 业务风险
+- 基于公告分析的业务风险
+- 行业政策风险
+- 竞争风险
 
-### 7. 估值分析
-- 当前估值水平（PE/PB）
+### 8. 估值分析
+- 当前估值水平
 - 历史估值区间
-- 同行业估值对比
 - 合理估值区间判断
 
-### 8. 投资建议
+### 9. 投资建议
 - 投资逻辑总结
 - 风险收益比评估
 - 建议操作策略
@@ -287,12 +483,13 @@ def generate_analysis_prompt(company_name: str, stock_code: str, context: str) -
 
 1. 使用中文撰写
 2. 使用 Markdown 格式
-3. 数据引用要准确
+3. 数据引用要准确，注明来源于年报
 4. 分析要深入，结合商业模式和财务数据
-5. 风险提示要明确
-6. 结论要客观，避免过度乐观或悲观
-7. 使用表格展示关键财务指标对比
-8. 重点分析 ROE 的三因素拆解及其与商业模式的关系
+5. 充分利用公告信息进行风险分析
+6. 风险提示要明确
+7. 结论要客观，避免过度乐观或悲观
+8. 使用表格展示关键财务指标对比
+9. 重点分析 ROE 的三因素拆解及其与商业模式的关系
 
 请开始分析。
 """
@@ -300,58 +497,153 @@ def generate_analysis_prompt(company_name: str, stock_code: str, context: str) -
 
 
 def main():
-    """Main function"""
+    """主函数"""
     if len(sys.argv) < 2:
-        print("Usage: python analyze_company.py <stock_code>")
+        print("Usage: python analyze_company.py <stock_code> [years] [--skip-xueqiu]")
         print("Example: python analyze_company.py 600519")
+        print("         python analyze_company.py 09992 5")
+        print("         python analyze_company.py 600519 5 --skip-xueqiu")
         sys.exit(1)
 
     stock_code = sys.argv[1]
+    years = int(sys.argv[2]) if len(sys.argv) > 2 and not sys.argv[2].startswith('--') else 5
+    skip_xueqiu = '--skip-xueqiu' in sys.argv
+
     normalized_code, market, market_type = normalize_stock_code(stock_code)
 
     print("\n" + "="*80)
-    print(f"Company Financial Analysis System")
-    print(f"Analyzing: {normalized_code}")
+    print(f"公司财务分析系统 v2.0")
+    print(f"股票代码: {normalized_code}")
+    print(f"市场类型: {market_type}")
+    print(f"数据范围: 最近 {years} 年")
+    print(f"爬取雪球: {'否' if skip_xueqiu else '是'}")
     print("="*80)
 
-    # Create output directory
+    # 创建输出目录
     output_dir = create_output_directory(normalized_code)
-    print(f"\nOutput directory: {output_dir}\n")
+    print(f"\n输出目录: {output_dir}\n")
 
-    # Collect all data
-    all_data = collect_all_data(normalized_code, output_dir)
+    # 保存基本公司信息
+    company_info = {
+        'stock_code': normalized_code,
+        'market': market,
+        'market_type': market_type,
+    }
+    save_json(company_info, output_dir / 'processed_data' / 'company_info.json')
 
-    # Prepare analysis context
+    # 阶段1: 下载年报、季报和公告
+    download_result = download_reports(normalized_code, output_dir, years)
+
+    # 阶段2: 从财报中提取财务数据（同时生成文本文件，带来源标注）
+    financial_data = extract_financial_data(normalized_code, output_dir)
+
+    # 阶段2.5: 生成财务指标索引
     print("\n" + "="*80)
-    print("PHASE 2: PREPARING ANALYSIS CONTEXT")
+    print("阶段 2.5: 生成财务指标索引")
+    print("="*80 + "\n")
+    try:
+        from generate_index import main as generate_index
+        generate_index(output_dir)
+    except Exception as e:
+        print(f"索引生成失败（可选步骤）: {e}")
+
+    # 阶段2.6: 生成核心指标表格
+    generate_metrics_tables(output_dir)
+
+    # 阶段3: 获取行业数据（可选）
+    industry_data = fetch_industry_data(normalized_code, output_dir)
+
+    # 阶段4: 爬取雪球讨论（可选）
+    xueqiu_analysis = {}
+    if not skip_xueqiu:
+        xueqiu_analysis = fetch_xueqiu_data(normalized_code, output_dir)
+    else:
+        print("\n" + "="*80)
+        print("阶段 4: 跳过雪球爬取")
+        print("="*80 + "\n")
+
+    # 阶段5: 准备分析上下文
+    print("\n" + "="*80)
+    print("阶段 5: 准备分析上下文")
     print("="*80 + "\n")
 
     context = prepare_analysis_context(output_dir)
-    company_name = all_data.get('financial', {}).get('company_info', {}).get('company_name', normalized_code)
+    company_name = normalized_code  # 可以从年报中提取公司名称
 
-    # Generate analysis prompt
-    analysis_prompt = generate_analysis_prompt(company_name, normalized_code, context)
+    # 生成分析提示词（传入output_dir以生成数据访问指南）
+    analysis_prompt = generate_analysis_prompt(company_name, normalized_code, context, output_dir)
 
-    # Save prompt for manual analysis
+    # 保存提示词
     prompt_file = output_dir / 'analysis_prompt.txt'
     with open(prompt_file, 'w', encoding='utf-8') as f:
         f.write(analysis_prompt)
 
-    print(f"Analysis prompt saved to: {prompt_file}")
-    print("\n" + "="*80)
-    print("PHASE 3: AI ANALYSIS")
-    print("="*80 + "\n")
+    print(f"分析提示词已保存: {prompt_file}")
 
-    print("To complete the analysis, please:")
-    print("1. Copy the prompt from: " + str(prompt_file))
-    print("2. Send it to Claude (Sonnet 4.5)")
-    print("3. Save the response to: " + str(output_dir / 'analysis_report.md'))
-    print("\nOr use the Claude API to automate this step.")
-
+    # 打印完成信息
     print("\n" + "="*80)
-    print("ANALYSIS COMPLETE")
+    print("数据收集完成")
     print("="*80)
-    print(f"\nAll results saved to: {output_dir}")
+
+    # 统计季报数量
+    quarterly_counts = {}
+    for report_type in ['semi', 'q1', 'q3']:
+        quarterly_counts[report_type] = len(download_result.get('quarterly_reports', {}).get(report_type, []))
+
+    print(f"\n数据摘要:")
+    print(f"  年报数量: {len(download_result.get('annual_reports', []))}")
+    print(f"  半年报数量: {quarterly_counts.get('semi', 0)}")
+    print(f"  一季报数量: {quarterly_counts.get('q1', 0)}")
+    print(f"  三季报数量: {quarterly_counts.get('q3', 0)}")
+    print(f"  公告数量: {len(download_result.get('announcements', []))}")
+    print(f"  财务数据年份: {list(financial_data.keys()) if financial_data else '无'}")
+
+    if xueqiu_analysis and not xueqiu_analysis.get('error'):
+        sentiment = xueqiu_analysis.get('sentiment', {})
+        print(f"  雪球讨论: {xueqiu_analysis.get('total_discussions', 0)} 条")
+        print(f"  市场情感: {sentiment.get('score', 0):.2f} (-1悲观 ~ 1乐观)")
+
+    print(f"\n所有结果已保存到: {output_dir}")
+
+    # 列出生成的文件
+    print(f"\n生成的文件:")
+    files_to_check = [
+        ('analysis_prompt.txt', '分析提示词'),
+        ('processed_data/financial_data_with_source.json', '带来源的财务数据'),
+        ('processed_data/metrics_tables.md', '核心指标表格'),
+        ('processed_data/xueqiu_analysis.json', '雪球讨论分析'),
+    ]
+    for file_path, description in files_to_check:
+        full_path = output_dir / file_path
+        if full_path.exists():
+            size_kb = full_path.stat().st_size / 1024
+            print(f"  ✓ {description}: {file_path} ({size_kb:.1f} KB)")
+
+    # 检查是否已有分析报告，如果有则复制到桌面报告目录
+    report_file = output_dir / 'analysis_report.md'
+    if report_file.exists():
+        print("\n" + "="*80)
+        print("保存分析报告")
+        print("="*80 + "\n")
+        saved_report = save_report_to_desktop(report_file, normalized_code)
+        if saved_report:
+            print(f"\n报告已保存到桌面: {saved_report}")
+
+    print("\n" + "="*80)
+    print("下一步: AI 分析")
+    print("="*80)
+
+    print(f"""
+请使用以下方式完成分析：
+
+1. 读取分析提示词: {prompt_file}
+2. 将提示词发送给 Claude 进行分析
+3. 将分析结果保存到: {output_dir / 'analysis_report.md'}
+
+分析完成后，报告将自动保存到: {DEFAULT_REPORTS_DIR}
+
+或者直接告诉我"生成分析报告"，我会基于收集的数据生成报告。
+""")
 
 
 if __name__ == '__main__':

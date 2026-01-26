@@ -46,6 +46,10 @@ company_analysis_*/
 temp/
 tmp/
 
-# Data files (optional, uncomment if you don't want to track data)
-# raw_data/
-# processed_data/
+# Data files (downloaded reports and analysis outputs)
+scripts/data/
+scripts/company_analysis_*/
+data/
+
+# Test data
+scripts/scripts/
