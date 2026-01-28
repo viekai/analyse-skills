@@ -1,13 +1,13 @@
 ---
 name: company-financial-analysis
-description: Comprehensive financial analysis system for Chinese listed companies (A-shares and Hong Kong stocks). Use when users want to analyze a company's investment value, business model, financial health, or industry position. Supports A-share codes (e.g., 600519, 000001) and Hong Kong stock codes (e.g., 00700, 09992). Downloads annual reports and announcements from official sources (巨潮资讯网 for A-shares, 港交所披露易 for HK stocks), extracts financial data from reports, and generates professional investment analysis reports.
+description: Comprehensive financial analysis system for Chinese listed companies (A-shares and Hong Kong stocks). Use when users want to analyze a company's investment value, business model, financial health, or industry position. Supports A-share codes (e.g., 600519, 000001) and Hong Kong stock codes (e.g., 00700, 09992). Downloads annual reports, quarterly reports (Q1, semi-annual, Q3), and announcements from official sources (巨潮资讯网 for A-shares, 港交所披露易 for HK stocks). **Automatically prioritizes the latest quarterly reports** when the current year's annual report is not yet published, ensuring analysis reflects the most recent financial performance.
 ---
 
 # Company Financial Analysis
 
 ## Overview
 
-This skill provides comprehensive investment analysis for Chinese listed companies, supporting both A-shares and Hong Kong stocks. It downloads financial reports and announcements from official sources and extracts data directly from the downloaded PDFs.
+This skill provides comprehensive investment analysis for Chinese listed companies, supporting both A-shares and Hong Kong stocks. It downloads financial reports (annual + quarterly) and announcements from official sources and extracts data directly from the downloaded PDFs.
 
 **Supported Markets:**
 - **A-shares**: Shanghai (6xxxxx), Shenzhen (0xxxxx, 3xxxxx), Beijing (4xxxxx, 8xxxxx)
@@ -19,7 +19,9 @@ This skill provides comprehensive investment analysis for Chinese listed compani
 
 **核心依赖**: CnInfoReports - 开源财报下载库，支持A股和港股
 
-**Key Principle**: 财务数据只从下载的财报PDF中提取，不从网上搜索
+**Key Principles**:
+- 财务数据只从下载的财报PDF中提取，不从网上搜索
+- **自动优先分析最新季度报表**（当年年报未发布时）
 
 ## Workflow
 
@@ -51,22 +53,29 @@ python3 analyze_company.py 00700       # 腾讯控股
 
 **What this does:**
 1. Creates output directory: `company_analysis_<code>_<date>/`
-2. Downloads annual reports (近5年年报PDF):
+2. Downloads financial reports (近5年):
+   - **年报** (Annual Reports)
+   - **三季报** (Q3 Reports)
+   - **半年报** (Semi-annual Reports)
+   - **一季报** (Q1 Reports)
    - A股: 从巨潮资讯网下载
    - 港股: 从港交所披露易下载
 3. Downloads all announcements (近5年所有公告)
 4. Extracts financial data from downloaded PDF reports
 5. Calculates DuPont analysis indicators
-6. Generates analysis prompt
+6. **Automatically detects and prioritizes latest quarterly reports**
+7. Generates analysis prompt with latest data guidance
 
 ### Step 3: Generate Analysis Report
 
 After data collection, generate the analysis report using the prompt:
 1. Read the analysis prompt from `analysis_prompt.txt`
-2. Load the analysis framework: `references/analysis_framework.md`
-3. Load DuPont analysis guide: `references/dupont_analysis.md`
-4. Generate comprehensive analysis
-5. Save report to `analysis_report.md`
+2. **System automatically detects latest quarterly reports** (Q3/Semi/Q1)
+3. Load the analysis framework: `references/analysis_framework.md`
+4. Load DuPont analysis guide: `references/dupont_analysis.md`
+5. **Prioritize analysis of latest quarterly data** if current year's annual report not available
+6. Generate comprehensive analysis combining historical annual reports and latest quarterly data
+7. Save report to `analysis_report.md`
 
 ### Step 4: Deliver Results
 

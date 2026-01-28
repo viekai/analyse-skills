@@ -324,11 +324,86 @@ def generate_analysis_prompt(company_name: str, stock_code: str, context: str, o
     data_access_guide = ""
     if output_dir:
         reports_dir = output_dir / 'raw_data' / 'annual_reports'
+
+        # 检查最新季度报表
+        current_year = datetime.now().year
+        last_year = current_year - 1
+        latest_quarterly_info = ""
+
+        # 检查最近两年的季度报表（优先当年，其次去年）
+        q3_dir = output_dir / 'raw_data' / 'q3_reports'
+        semi_dir = output_dir / 'raw_data' / 'semi_annual_reports'
+        q1_dir = output_dir / 'raw_data' / 'q1_reports'
+        annual_dir = output_dir / 'raw_data' / 'annual_reports'
+
+        # 检查当年年报是否已发布
+        current_year_annual = list(annual_dir.glob(f'*{current_year}*.pdf')) if annual_dir.exists() else []
+
+        if not current_year_annual:
+            # 当年年报未发布，检查最新季度报表
+            # 优先级: 当年Q3 > 当年半年报 > 当年Q1 > 去年Q3 > 去年半年报
+            if q3_dir.exists():
+                q3_current = list(q3_dir.glob(f'*{current_year}*.pdf'))
+                q3_last = list(q3_dir.glob(f'*{last_year}*.pdf'))
+
+                if q3_current:
+                    latest_quarterly_info = f"""
+**重要**: {current_year}年年报尚未发布，但已有{current_year}年前三季度财报。
+- 三季报目录: `{q3_dir}`
+- 请优先分析最新的三季报数据，了解公司最新经营状况
+- 结合历年年报数据进行趋势分析
+"""
+                elif q3_last:
+                    latest_quarterly_info = f"""
+**重要**: {current_year}年年报尚未发布，最新财报为{last_year}年前三季度。
+- 三季报目录: `{q3_dir}`
+- 请优先分析{last_year}年三季报数据，了解公司最新经营状况
+- 结合历年年报数据进行趋势分析
+"""
+
+            if not latest_quarterly_info and semi_dir.exists():
+                semi_current = list(semi_dir.glob(f'*{current_year}*.pdf'))
+                semi_last = list(semi_dir.glob(f'*{last_year}*.pdf'))
+
+                if semi_current:
+                    latest_quarterly_info = f"""
+**重要**: {current_year}年年报尚未发布，但已有{current_year}年半年报。
+- 半年报目录: `{semi_dir}`
+- 请优先分析最新的半年报数据，了解公司最新经营状况
+- 结合历年年报数据进行趋势分析
+"""
+                elif semi_last:
+                    latest_quarterly_info = f"""
+**重要**: {current_year}年年报尚未发布，最新财报为{last_year}年半年报。
+- 半年报目录: `{semi_dir}`
+- 请优先分析{last_year}年半年报数据，了解公司最新经营状况
+- 结合历年年报数据进行趋势分析
+"""
+
+            if not latest_quarterly_info and q1_dir.exists():
+                q1_current = list(q1_dir.glob(f'*{current_year}*.pdf'))
+                q1_last = list(q1_dir.glob(f'*{last_year}*.pdf'))
+
+                if q1_current:
+                    latest_quarterly_info = f"""
+**重要**: {current_year}年年报尚未发布，但已有{current_year}年一季报。
+- 一季报目录: `{q1_dir}`
+- 请优先分析最新的一季报数据，了解公司最新经营状况
+- 结合历年年报数据进行趋势分析
+"""
+                elif q1_last:
+                    latest_quarterly_info = f"""
+**重要**: {current_year}年年报尚未发布，最新财报为{last_year}年一季报。
+- 一季报目录: `{q1_dir}`
+- 请优先分析{last_year}年一季报数据，了解公司最新经营状况
+- 结合历年年报数据进行趋势分析
+"""
+
         data_access_guide = f"""
 ## 数据访问方式
 
 财务数据已保存为可搜索的文本格式。请使用工具按需查询，而不是一次性读取所有内容。
-
+{latest_quarterly_info}
 ### 搜索指南
 
 **查找财务指标**（使用grep搜索年报文本）:
@@ -337,17 +412,23 @@ def generate_analysis_prompt(company_name: str, stock_code: str, context: str, o
 - 资产相关: `grep "总资产|资产总计|Total Assets" {reports_dir}/*.txt`
 - 比率指标: `grep "毛利率|净利率|ROE|净资产收益率" {reports_dir}/*.txt`
 
+**查找季度报表**（使用Read工具直接读取PDF或转换后的文本）:
+- 三季报: `{output_dir}/raw_data/q3_reports/`
+- 半年报: `{output_dir}/raw_data/semi_annual_reports/`
+- 一季报: `{output_dir}/raw_data/q1_reports/`
+
 **读取详细内容**:
-- 使用 Read 工具读取特定文本文件
+- 使用 Read 工具读取特定文本文件或PDF
 - 根据索引中的行号定位具体数据
 - 每次只读取需要的部分，避免加载过多内容
 
 ### 分析流程建议
 
-1. 先阅读财务指标索引，了解数据位置
-2. 使用 grep 搜索关键指标
-3. 读取相关上下文获取详细数据
-4. 引用数据时注明来源年份和页码
+1. **优先分析最新季度数据**（如果当年年报未发布）
+2. 先阅读财务指标索引，了解数据位置
+3. 使用 grep 搜索关键指标
+4. 读取相关上下文获取详细数据
+5. 引用数据时注明来源（年份/季度、页码）
 """
 
     prompt = f"""# 投资分析任务
@@ -355,9 +436,11 @@ def generate_analysis_prompt(company_name: str, stock_code: str, context: str, o
 请为 {company_name} ({stock_code}) 生成一份专业的投资分析报告。
 
 **重要说明**：
-- 所有财务数据均来源于公司年报
+- 所有财务数据均来源于公司年报和季度报表
+- **优先分析最新的季度报表**（如当年年报未发布，则分析最新的三季报/半年报/一季报）
 - 请使用工具按需搜索和读取数据，不要假设数据内容
-- 引用数据时注明来源（年份、页码）
+- 引用数据时注明来源（年份/季度、页码）
+- 结合历年年报和最新季报，分析公司最新经营状况和发展趋势
 {data_access_guide}
 ## 分析框架
 
