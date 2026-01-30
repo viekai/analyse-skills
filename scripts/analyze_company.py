@@ -191,7 +191,25 @@ def prepare_analysis_context(output_dir: Path) -> str:
     # 1. 公司基本信息（保留，很小）
     try:
         company_info = load_json(output_dir / 'processed_data' / 'company_info.json')
-        context_parts.append(f"## 公司基本信息\n{json.dumps(company_info, ensure_ascii=False)}")
+        context_parts.append(f"## 公司基本信息\n{json.dumps(company_info, ensure_ascii=False, indent=2)}")
+
+        # 如果有市场数据，单独高亮显示
+        if 'market_data' in company_info:
+            md = company_info['market_data']
+            market_summary = f"""
+## 实时市场数据
+
+| 指标 | 数值 |
+|------|------|
+| 当前股价 | {md.get('price', 'N/A')} 元 |
+| 昨日收盘 | {md.get('prev_close', 'N/A')} 元 |
+| 涨跌额 | {md.get('change', 'N/A')} 元 |
+| 涨跌幅 | {md.get('change_percent', 'N/A')}% |
+| 更新时间 | {md.get('update_time', 'N/A')} |
+
+**注意**: 使用此实时价格计算市值、PE等估值指标时，需结合财报中的净利润和总股本数据。
+"""
+            context_parts.append(market_summary)
     except:
         pass
 
@@ -606,12 +624,45 @@ def main():
     output_dir = create_output_directory(normalized_code)
     print(f"\n输出目录: {output_dir}\n")
 
-    # 保存基本公司信息
+    # 保存基本公司信息（包含实时市场数据）
     company_info = {
         'stock_code': normalized_code,
         'market': market,
         'market_type': market_type,
     }
+
+    # 尝试获取实时股价和市值数据
+    try:
+        print("\n" + "="*80)
+        print("获取实时股价和市值数据")
+        print("="*80 + "\n")
+
+        from stock_price_fetcher import StockPriceFetcher
+        fetcher = StockPriceFetcher()
+
+        # 检查服务可用性
+        if fetcher.health_check():
+            # 获取股票行情
+            quote = fetcher.get_stock_quote(normalized_code)
+            if quote:
+                company_info['market_data'] = {
+                    'price': quote.get('price'),
+                    'prev_close': quote.get('prev_close'),
+                    'change': quote.get('change'),
+                    'change_percent': quote.get('change_percent'),
+                    'update_time': quote.get('update_time'),
+                    'source': quote.get('source')
+                }
+                print(f"  ✓ 当前股价: {quote.get('price')} 元")
+                print(f"  ✓ 数据来源: {quote.get('source')}")
+                print(f"  ✓ 更新时间: {quote.get('update_time')}")
+            else:
+                print("  ⚠ 无法获取实时股价（将继续分析）")
+        else:
+            print("  ⚠ 股价API服务不可用（将继续分析）")
+    except Exception as e:
+        print(f"  ⚠ 获取实时数据失败: {e}（将继续分析）")
+
     save_json(company_info, output_dir / 'processed_data' / 'company_info.json')
 
     # 阶段1: 下载年报、季报和公告
