@@ -125,6 +125,29 @@ Present the analysis report to the user, highlighting:
 - Critical risks
 - Investment recommendation
 
+### Step 6: Generate Canvas Visualization (NEW!)
+
+生成 Obsidian Canvas 可视化文件，便于快速查看和分享：
+
+```bash
+python3 generate_canvas.py <公司名称> <股票代码> <报告路径> [输出目录]
+
+# 示例
+python3 generate_canvas.py 拼多多 PDD ~/ai/obsidian-notes/projects/拼多多-PDD.md
+python3 generate_canvas.py 安踏体育 02020.HK ~/ai/obsidian-notes/projects/安踏体育-02020.HK.md
+```
+
+**输出文件**: `~/ai/obsidian-notes/canvases/<公司名称>-综合投资价值分析.canvas`
+
+**Canvas 包含**:
+- 标题和评级
+- 估值指标 (PE/PB/市值)
+- 业绩数据 (营收/净利润/利润率)
+- 杜邦分析 (ROE拆解)
+- 投资亮点
+- 风险提示
+- 投资建议
+
 ## Analysis Framework
 
 ### DuPont Analysis
