@@ -5,15 +5,16 @@
 数据获取方式：
 - A股：从巨潮资讯网下载财报和公告（年报+季报）
 - 港股：从港交所披露易下载财报和公告（年报+季报）
+- 美股：从SEC EDGAR下载财报（10-K、10-Q、8-K等）
 - 财务数据只从下载的财报PDF中提取，不从网上搜索
-- 市场反馈从雪球讨论中爬取
+- 市场情绪通过 web_search 采集公开新闻分析
 
 分析流程：
 1. 下载近5年年报和季报
 2. 下载近5年所有公告
 3. 从财报中提取财务数据（带来源标注）
 4. 生成核心指标表格
-5. 爬取雪球讨论
+5. 生成新闻采集指引（通过 web_search 执行）
 6. 生成分析报告
 """
 import sys
@@ -156,27 +157,30 @@ def generate_metrics_tables(output_dir: Path) -> bool:
         return False
 
 
-def fetch_xueqiu_data(stock_code: str, output_dir: Path, max_pages: int = 5) -> dict:
+def fetch_news_guidance(company_name: str, stock_code: str, output_dir: Path) -> dict:
     """
-    爬取雪球讨论
+    生成新闻采集指引
+    
+    实际的新闻采集需要通过 Claude Code 的 web_search 工具完成
+    此函数生成采集指引供后续分析使用
 
     Args:
+        company_name: 公司名称
         stock_code: 股票代码
         output_dir: 输出目录
-        max_pages: 最大爬取页数
 
     Returns:
-        分析结果
+        采集指引
     """
     print("\n" + "="*80)
-    print("阶段 4: 爬取雪球讨论")
+    print("阶段 4: 生成新闻采集指引")
     print("="*80 + "\n")
 
     try:
-        from fetch_xueqiu_discussions import main as fetch_xueqiu
-        return fetch_xueqiu(stock_code, output_dir, max_pages)
+        from fetch_news import main as generate_news_guidance
+        return generate_news_guidance(company_name, stock_code, output_dir)
     except Exception as e:
-        print(f"爬取雪球讨论失败: {e}")
+        print(f"生成新闻采集指引失败: {e}")
         return {}
 
 
@@ -296,39 +300,29 @@ def prepare_analysis_context(output_dir: Path) -> str:
     except:
         pass
 
-    # 8. 雪球讨论分析
+    # 8. 新闻分析（如果已采集）
     try:
-        xueqiu_analysis = load_json(output_dir / 'processed_data' / 'xueqiu_analysis.json')
-        if xueqiu_analysis and not xueqiu_analysis.get('error'):
-            sentiment = xueqiu_analysis.get('sentiment', {})
-            xueqiu_summary = f"""## 雪球市场反馈
+        news_analysis = load_json(output_dir / 'processed_data' / 'news_analysis.json')
+        if news_analysis and not news_analysis.get('error'):
+            from fetch_news import format_news_for_analysis
+            news_summary = format_news_for_analysis(news_analysis)
+            if news_summary:
+                context_parts.append(news_summary)
+    except:
+        pass
+    
+    # 8.1 新闻采集指引（如果尚未采集）
+    try:
+        news_prompt_file = output_dir / 'processed_data' / 'news_search_prompt.md'
+        if news_prompt_file.exists():
+            news_analysis = load_json(output_dir / 'processed_data' / 'news_analysis.json')
+            if not news_analysis:  # 尚未采集
+                context_parts.append(f"""## 新闻采集待完成
 
-**数据采集时间**: {xueqiu_analysis.get('fetch_time', 'N/A')}
-**讨论总数**: {xueqiu_analysis.get('total_discussions', 0)}
+新闻采集指引已生成: `{news_prompt_file}`
 
-### 情感分布
-- 看多: {sentiment.get('positive', 0)}
-- 看空: {sentiment.get('negative', 0)}
-- 中性: {sentiment.get('neutral', 0)}
-- **情感得分**: {sentiment.get('score', 0)} (-1悲观 ~ 1乐观)
-
-### 主要看多观点
-"""
-            bullish = xueqiu_analysis.get('key_opinions', {}).get('bullish', [])[:5]
-            for op in bullish:
-                xueqiu_summary += f"- {op.get('content', '')[:100]}... (赞:{op.get('likes', 0)})\n"
-
-            xueqiu_summary += "\n### 主要看空/风险观点\n"
-            bearish = xueqiu_analysis.get('key_opinions', {}).get('bearish', [])[:5]
-            for op in bearish:
-                xueqiu_summary += f"- {op.get('content', '')[:100]}... (赞:{op.get('likes', 0)})\n"
-
-            if xueqiu_analysis.get('risk_mentions'):
-                xueqiu_summary += "\n### 风险相关讨论\n"
-                for risk in xueqiu_analysis.get('risk_mentions', [])[:5]:
-                    xueqiu_summary += f"- {risk.get('content', '')[:100]}...\n"
-
-            context_parts.append(xueqiu_summary)
+请使用 web_search 工具执行新闻搜索，完成市场情绪分析。
+""")
     except:
         pass
 
@@ -600,24 +594,24 @@ def generate_analysis_prompt(company_name: str, stock_code: str, context: str, o
 def main():
     """主函数"""
     if len(sys.argv) < 2:
-        print("Usage: python analyze_company.py <stock_code> [years] [--skip-xueqiu]")
+        print("Usage: python analyze_company.py <stock_code> [years] [--skip-news]")
         print("Example: python analyze_company.py 600519")
         print("         python analyze_company.py 09992 5")
-        print("         python analyze_company.py 600519 5 --skip-xueqiu")
+        print("         python analyze_company.py 600519 5 --skip-news")
         sys.exit(1)
 
     stock_code = sys.argv[1]
     years = int(sys.argv[2]) if len(sys.argv) > 2 and not sys.argv[2].startswith('--') else 5
-    skip_xueqiu = '--skip-xueqiu' in sys.argv
+    skip_news = '--skip-news' in sys.argv
 
     normalized_code, market, market_type = normalize_stock_code(stock_code)
 
     print("\n" + "="*80)
-    print(f"公司财务分析系统 v2.0")
+    print(f"公司财务分析系统 v3.0")
     print(f"股票代码: {normalized_code}")
     print(f"市场类型: {market_type}")
     print(f"数据范围: 最近 {years} 年")
-    print(f"爬取雪球: {'否' if skip_xueqiu else '是'}")
+    print(f"新闻采集: {'否' if skip_news else '是（通过 web_search）'}")
     print("="*80)
 
     # 创建输出目录
@@ -687,13 +681,21 @@ def main():
     # 阶段3: 获取行业数据（可选）
     industry_data = fetch_industry_data(normalized_code, output_dir)
 
-    # 阶段4: 爬取雪球讨论（可选）
-    xueqiu_analysis = {}
-    if not skip_xueqiu:
-        xueqiu_analysis = fetch_xueqiu_data(normalized_code, output_dir)
+    # 阶段4: 生成新闻采集指引（可选）
+    news_guidance = {}
+    if not skip_news:
+        # 尝试从年报中提取公司名称
+        company_name = normalized_code  # 默认使用股票代码
+        try:
+            company_info = load_json(output_dir / 'processed_data' / 'company_info.json')
+            if company_info and company_info.get('company_name'):
+                company_name = company_info.get('company_name')
+        except:
+            pass
+        news_guidance = fetch_news_guidance(company_name, normalized_code, output_dir)
     else:
         print("\n" + "="*80)
-        print("阶段 4: 跳过雪球爬取")
+        print("阶段 4: 跳过新闻采集")
         print("="*80 + "\n")
 
     # 阶段5: 准备分析上下文
@@ -732,10 +734,9 @@ def main():
     print(f"  公告数量: {len(download_result.get('announcements', []))}")
     print(f"  财务数据年份: {list(financial_data.keys()) if financial_data else '无'}")
 
-    if xueqiu_analysis and not xueqiu_analysis.get('error'):
-        sentiment = xueqiu_analysis.get('sentiment', {})
-        print(f"  雪球讨论: {xueqiu_analysis.get('total_discussions', 0)} 条")
-        print(f"  市场情感: {sentiment.get('score', 0):.2f} (-1悲观 ~ 1乐观)")
+    if news_guidance and news_guidance.get('queries'):
+        print(f"  新闻采集: 已生成 {len(news_guidance.get('queries', []))} 条搜索查询")
+        print(f"  采集指引: {news_guidance.get('prompt_file', 'N/A')}")
 
     print(f"\n所有结果已保存到: {output_dir}")
 
@@ -745,7 +746,8 @@ def main():
         ('analysis_prompt.txt', '分析提示词'),
         ('processed_data/financial_data_with_source.json', '带来源的财务数据'),
         ('processed_data/metrics_tables.md', '核心指标表格'),
-        ('processed_data/xueqiu_analysis.json', '雪球讨论分析'),
+        ('processed_data/news_search_prompt.md', '新闻采集指引'),
+        ('processed_data/news_analysis.json', '新闻分析结果'),
     ]
     for file_path, description in files_to_check:
         full_path = output_dir / file_path
