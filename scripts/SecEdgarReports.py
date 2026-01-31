@@ -18,8 +18,8 @@ from typing import Optional
 
 
 # SEC EDGAR API 基础 URL
-EDGAR_BASE = "https://data.sec.gov"
-EDGAR_FILINGS = "https://www.sec.gov/cgi-bin/browse-edgar"
+EDGAR_API_BASE = "https://data.sec.gov"  # API 数据
+EDGAR_ARCHIVES = "https://www.sec.gov"   # 文件下载
 
 # SEC 要求的 User-Agent
 HEADERS = {
@@ -39,10 +39,24 @@ def get_cik_from_ticker(ticker: str) -> Optional[str]:
         CIK 编号（10位数字字符串），如找不到则返回 None
     """
     try:
-        # SEC 提供的公司 ticker-CIK 映射
-        url = f"{EDGAR_BASE}/submissions/CIK{ticker.upper()}.json"
+        ticker_upper = ticker.upper()
         
-        # 先尝试直接用 ticker 作为 CIK 前缀搜索
+        # 使用公司 ticker-CIK 映射文件（最可靠的方式）
+        search_url = "https://www.sec.gov/files/company_tickers.json"
+        response = httpx.get(search_url, headers=HEADERS, timeout=30)
+        
+        if response.status_code == 200:
+            companies = response.json()
+            
+            for key, company in companies.items():
+                if company.get('ticker', '').upper() == ticker_upper:
+                    cik = company.get('cik_str')
+                    if cik:
+                        return str(cik).zfill(10)
+        
+        # 备选：尝试直接访问 submissions API
+        # 先尝试用 ticker 作为 CIK 前缀搜索
+        url = f"{EDGAR_API_BASE}/submissions/CIK{ticker_upper}.json"
         response = httpx.get(url, headers=HEADERS, timeout=30)
         
         if response.status_code == 200:
@@ -50,20 +64,6 @@ def get_cik_from_ticker(ticker: str) -> Optional[str]:
             cik = data.get('cik')
             if cik:
                 return str(cik).zfill(10)
-        
-        # 如果失败，使用公司搜索 API
-        search_url = f"{EDGAR_BASE}/submissions/company_tickers.json"
-        response = httpx.get(search_url, headers=HEADERS, timeout=30)
-        
-        if response.status_code == 200:
-            companies = response.json()
-            ticker_upper = ticker.upper()
-            
-            for key, company in companies.items():
-                if company.get('ticker', '').upper() == ticker_upper:
-                    cik = company.get('cik_str')
-                    if cik:
-                        return str(cik).zfill(10)
         
         return None
         
@@ -85,7 +85,7 @@ def get_company_filings(cik: str, form_types: list = None, count: int = 40) -> l
         提交列表
     """
     try:
-        url = f"{EDGAR_BASE}/submissions/CIK{cik}.json"
+        url = f"{EDGAR_API_BASE}/submissions/CIK{cik}.json"
         response = httpx.get(url, headers=HEADERS, timeout=30)
         
         if response.status_code != 200:
@@ -145,8 +145,8 @@ def download_filing(filing: dict, output_dir: Path) -> Optional[Path]:
         form = filing['form']
         date = filing['date']
         
-        # 构建下载 URL
-        url = f"{EDGAR_BASE}/Archives/edgar/data/{int(cik)}/{accession}/{document}"
+        # 构建下载 URL (使用 www.sec.gov 而非 data.sec.gov)
+        url = f"{EDGAR_ARCHIVES}/Archives/edgar/data/{int(cik)}/{accession}/{document}"
         
         # 生成文件名
         ext = Path(document).suffix or '.htm'
