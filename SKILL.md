@@ -18,6 +18,7 @@ This skill provides comprehensive investment analysis for listed companies, supp
 - **A股财报和公告**: 巨潮资讯网 (cninfo.com.cn)
 - **港股财报和公告**: 巨潮资讯网港股频道 (cninfo.com.cn/hke)
 - **US财报和公告**: SEC EDGAR (sec.gov)
+- **US公司财务数据**: edgartools (适用于标准10-K/10-Q)
 - **实时行情**: 东方财富 (eastmoney.com) + 新浪财经 (备用)
 - **新闻/市场情绪**: 通过 OpenClaw web_search 工具采集公开新闻
 
@@ -25,6 +26,13 @@ This skill provides comprehensive investment analysis for listed companies, supp
 - 财务数据只从下载的财报PDF中提取，不从网上搜索
 - **自动优先分析最新季度报表**（当年年报未发布时）
 - 市场情绪通过 web_search 采集公开新闻分析（无爬虫依赖）
+
+**⚠️ 美股特别说明**:
+- **10-K/10-Q (美国公司如AAPL, MSFT)**: 可用 edgartools 自动提取财务数据
+- **20-F/6-K (外国发行人如PDD, BABA, TSM)**: 
+  - 6-K 文件仅为 SEC 封面页，不含详细财务数据
+  - 季度财务数据需通过 **web_search 搜索业绩公告** 获取
+  - 示例搜索: "拼多多 2025 Q3 财报 营收 净利润"
 
 ## Workflow
 
@@ -137,7 +145,8 @@ ROE = 净利率 × 资产周转率 × 权益乘数
 ```
 company_analysis_<code>_<date>/
 ├── raw_data/
-│   ├── annual_reports/           # 年报PDF (A股/港股) 或 10-K (美股)
+│   ├── annual_reports/           # 年报PDF (A股/港股) 或 10-K/20-F (美股)
+│   ├── quarterly_reports/        # 季报 (6-K 封面页)
 │   ├── q3_reports/               # 三季报
 │   ├── semi_annual_reports/      # 半年报
 │   ├── q1_reports/               # 一季报
@@ -145,13 +154,62 @@ company_analysis_<code>_<date>/
 ├── processed_data/
 │   ├── company_info.json         # 公司信息 + 实时行情
 │   ├── financial_data_with_source.json  # 带来源的财务数据
+│   ├── financials_<ticker>.json  # edgartools 提取的财务数据 (美股)
+│   ├── quarterly_data.json       # 季度财务数据 (NEW!)
+│   ├── quarterly_search_prompt.md # 季度数据搜索指引 (20-F公司)
 │   ├── metrics_tables.md         # 核心指标表格
-│   ├── news_search_prompt.md     # 新闻采集指引 (NEW!)
-│   ├── news_analysis.json        # 新闻分析结果 (NEW!)
+│   ├── news_search_prompt.md     # 新闻采集指引
+│   ├── news_analysis.json        # 新闻分析结果
 │   ├── all_announcements.json    # 所有公告
 │   └── important_announcements.json  # 重要公告
 ├── analysis_prompt.txt           # AI分析提示词
 └── analysis_report.md            # 最终分析报告
+```
+
+## US Stock Quarterly Data (NEW!)
+
+### 美股财务数据获取方式
+
+| 公司类型 | 文件格式 | 数据获取方式 |
+|----------|----------|--------------|
+| 美国公司 (AAPL, MSFT) | 10-K/10-Q | ✅ edgartools 自动提取 |
+| 外国发行人 (PDD, BABA, TSM) | 20-F/6-K | ⚠️ web_search 搜索业绩公告 |
+
+### 使用方法
+
+```bash
+# 检查公司类型并获取数据
+python3 fetch_us_quarterly.py <ticker> [output_dir]
+
+# 示例
+python3 fetch_us_quarterly.py AAPL   # 自动提取
+python3 fetch_us_quarterly.py PDD    # 生成搜索指引
+```
+
+### 外国发行人 (20-F) 处理流程
+
+1. 运行 `fetch_us_quarterly.py` 检测公司类型
+2. 如果不支持 edgartools，会生成 `quarterly_search_prompt.md`
+3. 使用 **web_search** 按指引搜索季度数据
+4. 将结果保存到 `quarterly_data.json`
+
+### 季度数据格式
+
+```json
+{
+    "company": "PDD Holdings Inc.",
+    "ticker": "PDD",
+    "fiscal_year": 2025,
+    "quarters": [
+        {
+            "quarter": "Q1",
+            "revenue": "956.7亿元",
+            "revenue_yoy": "+10%",
+            "net_income": "147.4亿元",
+            "source": "新浪财经"
+        }
+    ]
+}
 ```
 
 ## News Collection (NEW!)

@@ -53,3 +53,5 @@ data/
 
 # Test data
 scripts/scripts/
+.venv/
+*.json
