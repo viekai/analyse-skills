@@ -103,7 +103,13 @@ def main(stock_code: str, industry_name: str, output_dir: Path):
     print(f"Fetching Industry Data")
     print(f"{'='*60}\n")
 
-    if market_type == 'HK':
+    if market_type == 'US':
+        print("Note: US stock industry data not supported via akshare, skipping...")
+        industry_info = {'industry_name': industry_name, 'peer_companies': [], 'note': 'US stocks not supported'}
+        (output_dir / 'processed_data').mkdir(parents=True, exist_ok=True)
+        save_json(industry_info, output_dir / 'processed_data' / 'industry_info.json')
+        peer_financials = []
+    elif market_type == 'HK':
         print("Note: Hong Kong stock industry data requires manual research")
         industry_info = {'industry_name': industry_name, 'peer_companies': [], 'note': 'Manual research required'}
         save_json(industry_info, output_dir / 'processed_data' / 'industry_info.json')

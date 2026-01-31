@@ -40,12 +40,14 @@ def load_json(filepath: Path) -> dict:
 def normalize_stock_code(code: str) -> tuple:
     """
     Normalize stock code to standard format
-    Returns: (normalized_code, market)
+    Returns: (normalized_code, market, market_type)
     Examples:
         '600519' -> ('600519.SH', 'SH', 'A')
         '000001' -> ('000001.SZ', 'SZ', 'A')
         '00700' -> ('00700.HK', 'HK', 'HK')
         '600519.SH' -> ('600519.SH', 'SH', 'A')
+        'AAPL' -> ('AAPL', 'US', 'US')
+        'PDD' -> ('PDD', 'US', 'US')
     """
     code = code.strip().upper()
 
@@ -53,8 +55,17 @@ def normalize_stock_code(code: str) -> tuple:
     if '.' in code:
         parts = code.split('.')
         market = parts[1]
-        market_type = 'HK' if market == 'HK' else 'A'
+        if market == 'HK':
+            market_type = 'HK'
+        elif market == 'US':
+            market_type = 'US'
+        else:
+            market_type = 'A'
         return (code, market, market_type)
+
+    # US stocks: 1-5 letters only (no digits)
+    if code.isalpha() and 1 <= len(code) <= 5:
+        return (code, 'US', 'US')
 
     # Hong Kong stocks (5 digits, typically starting with 0)
     if len(code) == 5 and code.isdigit():
@@ -69,8 +80,11 @@ def normalize_stock_code(code: str) -> tuple:
     elif code.startswith('8') or code.startswith('4'):
         return (f"{code}.BJ", 'BJ', 'A')  # Beijing
     else:
-        # Default to Shanghai
-        return (f"{code}.SH", 'SH', 'A')
+        # Default to Shanghai for numeric codes
+        if code.isdigit():
+            return (f"{code}.SH", 'SH', 'A')
+        # Otherwise treat as US stock
+        return (code, 'US', 'US')
 
 
 def format_number(num, decimal_places=2):

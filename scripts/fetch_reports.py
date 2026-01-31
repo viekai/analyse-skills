@@ -580,6 +580,57 @@ def download_reports_and_announcements(stock_code: str, output_dir: Path, years:
     print(f"时间范围: 最近 {years} 年")
     print(f"{'='*60}")
 
+    # 美股使用 SEC EDGAR
+    if market_type == 'US':
+        try:
+            from SecEdgarReports import download_sec_reports
+            raw_data_dir = output_dir / 'raw_data'
+            raw_data_dir.mkdir(parents=True, exist_ok=True)
+            
+            sec_result = download_sec_reports(normalized_code, raw_data_dir, years)
+            
+            # 转换结果格式
+            result['annual_reports'] = [r['path'] for r in sec_result.get('annual_reports', [])]
+            result['q3_reports'] = [r['path'] for r in sec_result.get('quarterly_reports', [])]
+            result['announcements'] = [{'title': f"8-K {r['date']}", 'path': r['path']} 
+                                       for r in sec_result.get('announcements', [])]
+            
+            # 保存下载结果摘要
+            summary_path = output_dir / 'processed_data' / 'download_summary.json'
+            summary_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            summary = {
+                'stock_code': normalized_code,
+                'market_type': market_type,
+                'download_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'reports': {
+                    'annual': {'count': len(result['annual_reports']), 'files': result['annual_reports']},
+                    'semi': {'count': 0, 'files': []},
+                    'q1': {'count': 0, 'files': []},
+                    'q3': {'count': len(result['q3_reports']), 'files': result['q3_reports']},
+                },
+                'total_reports_count': len(result['annual_reports']) + len(result['q3_reports']),
+                'announcements_count': len(result['announcements']),
+                'annual_reports_count': len(result['annual_reports']),
+                'annual_report_files': result['annual_reports'],
+                'sec_cik': sec_result.get('cik'),
+            }
+            save_json(summary, summary_path)
+            
+            print(f"\n{'='*60}")
+            print(f"SEC EDGAR 下载完成")
+            print(f"年报 (10-K/20-F): {len(result['annual_reports'])} 份")
+            print(f"季报 (10-Q/6-K): {len(result['q3_reports'])} 份")
+            print(f"公告 (8-K): {len(result['announcements'])} 条")
+            print(f"{'='*60}\n")
+            
+            return result
+            
+        except Exception as e:
+            print(f"SEC EDGAR 下载失败: {e}")
+            return result
+
+    # A股和港股使用巨潮资讯网
     # 下载所有季度报告（年报+半年报+一季报+三季报）
     quarterly_result = download_all_quarterly_reports(stock_code, output_dir, years)
     result['annual_reports'] = quarterly_result.get('annual', [])
