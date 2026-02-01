@@ -110,7 +110,7 @@ class InvestmentCanvasGenerator:
         return self.data
     
     def _load_from_report(self, report_path):
-        """从分析报告提取数据"""
+        """从分析报告提取数据（改进版正则提取）"""
         try:
             with open(report_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -118,7 +118,7 @@ class InvestmentCanvasGenerator:
             print(f"读取报告失败: {e}")
             return
         
-        # 优先从 JSON 数据块提取
+        # 1. 优先从 JSON 数据块提取
         json_match = re.search(r'```json\s*\n(\{.*?\})\s*\n```', content, re.DOTALL)
         if json_match:
             try:
@@ -129,7 +129,169 @@ class InvestmentCanvasGenerator:
                         self.data[key] = value
                 return
             except json.JSONDecodeError as e:
-                print(f"JSON 解析失败: {e}")
+                print(f"JSON 解析失败，使用正则提取: {e}")
+        
+        # 2. 正则提取（改进版）
+        print("使用正则模式提取数据...")
+        extracted = 0
+        
+        # 基础信息提取模式
+        patterns = {
+            "current_price": [
+                r'当前股?价[：:]\s*\*?\*?([0-9.]+\s*[港美元]+)',
+                r'当前价[：:\s]+([0-9.]+\s*[港美元]+)',
+                r'股价[：:\s]+([0-9.]+\s*[港美元]+)',
+                r'\|\s*当前价\s*\|\s*([^|]+)\s*\|',
+            ],
+            "target_price": [
+                r'目标价[：:]\s*\*?\*?([^\n*]+)',
+                r'目标价区间[：:]\s*([^\n]+)',
+                r'合理估值[区间]*[：:]\s*([^\n]+)',
+            ],
+            "rating": [
+                r'评级[：:]\s*\*?\*?([★☆⭐]+[^*\n]*)',
+                r'综合评级[：:]\s*\*?\*?([^*\n]+)',
+                r'投资评级[：:]\s*\*?\*?([^*\n]+)',
+                r'\*\*评级\*\*[：:]\s*([^*\n]+)',
+            ],
+            "expected_return": [
+                r'预期收益[：:]\s*([^\n]+)',
+                r'潜在回报[：:]\s*([^\n]+)',
+                r'上涨空间[：:]\s*([^\n]+)',
+            ],
+            "market_cap": [
+                r'市值[：:\s|]+[约~]?([0-9,.]+\s*[亿万]*[港美元]*)',
+                r'\|\s*市值\s*\|\s*([^|]+)\s*\|',
+            ],
+            "pe": [
+                r'PE\s*[\(（]?TTM[\)）]?[：:\s|]+[约~]?([0-9.]+)x?',
+                r'PE[：:\s|]+[约~]?([0-9.]+)x?倍?',
+                r'\|\s*PE\s*\|\s*([^|]+)\s*\|',
+            ],
+            "pe_forward": [
+                r'PE\s*[\(（]?Forward[\)）]?[：:\s|]+([^\n|]+)',
+                r'PE\s*[\(（]?2025E?[\)）]?[：:\s|]+([0-9.]+)',
+            ],
+            "pb": [
+                r'PB[：:\s|]+[约~]?([0-9.]+)x?倍?',
+                r'\|\s*PB\s*\|\s*([^|]+)\s*\|',
+            ],
+            "ps": [
+                r'PS[：:\s|]+[约~]?([0-9.]+)x?倍?',
+            ],
+            "dividend_yield": [
+                r'股息率[：:\s|]+([0-9.]+%?)',
+                r'分红率[：:\s|]+([0-9.]+%?)',
+            ],
+            "revenue": [
+                r'营收[：:\s|]+([0-9,.]+\s*[亿万]*)',
+                r'营业收入[：:\s|]+([0-9,.]+\s*[亿万]*)',
+                r'\|\s*营收\s*\|\s*([^|]+)\s*\|',
+            ],
+            "revenue_yoy": [
+                r'营收[^|]*同比[：:\s|]+([+-]?[0-9.]+%?)',
+                r'收入增[长速][：:\s|]+([+-]?[0-9.]+%?)',
+                r'\|\s*同比\s*\|\s*([^|]+)\s*\|',
+            ],
+            "net_income": [
+                r'净利润[：:\s|]+([0-9,.]+\s*[亿万]*)',
+                r'归母净利润[：:\s|]+([0-9,.]+\s*[亿万]*)',
+                r'经调整净利[润额]*[：:\s|]+([0-9,.]+\s*[亿万]*)',
+            ],
+            "net_income_yoy": [
+                r'净利润[^|]*同比[：:\s|]+([+-]?[0-9.]+%?)',
+                r'利润增[长速][：:\s|]+([+-]?[0-9.]+%?)',
+            ],
+            "gross_margin": [
+                r'毛利率[：:\s|]+[约~]?([0-9.]+%?)',
+            ],
+            "net_margin": [
+                r'净利率[：:\s|]+[约~]?([0-9.]+%?)',
+                r'Non-GAAP净利率[：:\s|]+([0-9.]+%?)',
+            ],
+            "roe": [
+                r'ROE[：:\s|]+[约~]?([0-9.]+%?)',
+                r'净资产收益率[：:\s|]+([0-9.]+%?)',
+            ],
+            "operating_cashflow": [
+                r'经营现金流[：:\s|]+([0-9,.]+\s*[亿万]*)',
+                r'经营活动现金流[：:\s|]+([0-9,.]+\s*[亿万]*)',
+            ],
+            "cash_ratio": [
+                r'现金[储备余额]*[：:\s|]+([0-9,.]+\s*[亿万]*)',
+            ],
+            "suggestion": [
+                r'操作建议[：:]\s*([^\n]+)',
+                r'投资建议[：:]\s*([^\n]+)',
+                r'建议[：:]\s*([^\n]{10,80})',
+            ],
+        }
+        
+        for key, pattern_list in patterns.items():
+            if self.data.get(key) not in ['-', None, '']:
+                continue
+            for pattern in pattern_list:
+                match = re.search(pattern, content, re.IGNORECASE)
+                if match:
+                    value = match.group(1).strip().strip('*').strip()
+                    if value and value != '-' and len(value) < 100:
+                        self.data[key] = value
+                        extracted += 1
+                        break
+        
+        # 3. 提取投资亮点/催化剂
+        catalyst_patterns = [
+            r'核心投资逻辑.*?\n(.*?)(?=\n##|\n###|\n---|\Z)',
+            r'投资亮点.*?\n(.*?)(?=\n##|\n###|\n---|\Z)',
+            r'核心逻辑.*?\n(.*?)(?=\n##|\n###|\n---|\Z)',
+        ]
+        for pattern in catalyst_patterns:
+            match = re.search(pattern, content, re.DOTALL)
+            if match:
+                section = match.group(1)
+                items = re.findall(r'\d+\.\s*\*\*([^*]+)\*\*', section)
+                if not items:
+                    items = re.findall(r'[-•✅]\s*\*?\*?([^*\n]{5,60})\*?\*?', section)
+                if items:
+                    self.data["catalysts"] = [i.strip() for i in items[:6]]
+                    extracted += 1
+                    break
+        
+        # 4. 提取风险
+        risk_patterns = [
+            r'风险分析.*?\n(.*?)(?=\n##|\n---|\Z)',
+            r'风险提示.*?\n(.*?)(?=\n##|\n---|\Z)',
+            r'主要风险.*?\n(.*?)(?=\n##|\n---|\Z)',
+        ]
+        for pattern in risk_patterns:
+            match = re.search(pattern, content, re.DOTALL)
+            if match:
+                section = match.group(1)
+                items = re.findall(r'\d+\.\s*\*\*([^*:]+)\*\*', section)
+                if not items:
+                    items = re.findall(r'[-•⚠️]\s*\*?\*?([^*:\n]{5,50})\*?\*?', section)
+                if items:
+                    self.data["risks"] = [i.strip() for i in items[:6]]
+                    extracted += 1
+                    break
+        
+        # 5. 从表格提取季度数据
+        quarter_pattern = r'\|\s*(202[4-6]Q[1-4]|Q[1-4])\s*\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]*)\|'
+        quarter_matches = re.findall(quarter_pattern, content)
+        if quarter_matches:
+            quarters = []
+            for q in quarter_matches[:6]:
+                quarters.append({
+                    "quarter": q[0].strip(),
+                    "revenue": q[1].strip(),
+                    "revenue_yoy": q[2].strip(),
+                    "net_income": q[3].strip() if len(q) > 3 else "-"
+                })
+            if quarters:
+                self.data["quarters"] = quarters
+                extracted += 1
+        
+        print(f"正则提取完成，共提取 {extracted} 个字段")
     
     def generate(self):
         """生成 Canvas 布局 (参考中海油模板)"""
