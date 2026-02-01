@@ -125,28 +125,105 @@ Present the analysis report to the user, highlighting:
 - Critical risks
 - Investment recommendation
 
-### Step 6: Generate Canvas Visualization (NEW!)
+### Step 6: Generate Canvas Visualization (v2)
 
-生成 Obsidian Canvas 可视化文件，便于快速查看和分享：
+生成 Obsidian Canvas 可视化文件，便于快速查看和分享。
+
+#### 使用方法
 
 ```bash
-python3 generate_canvas.py <公司名称> <股票代码> <报告路径> [输出目录]
+cd ~/.claude/skills/company-financial-analysis/scripts
+python3 generate_canvas.py <公司名称> <股票代码> [报告路径] [输出目录]
 
 # 示例
-python3 generate_canvas.py 拼多多 PDD ~/ai/obsidian-notes/projects/拼多多-PDD.md
-python3 generate_canvas.py 安踏体育 02020.HK ~/ai/obsidian-notes/projects/安踏体育-02020.HK.md
+python3 generate_canvas.py 美团 03690.HK ~/ai/obsidian-notes/projects/美团-03690.HK.md
+python3 generate_canvas.py 泡泡玛特 09992.HK
 ```
 
-**输出文件**: `~/ai/obsidian-notes/canvases/<公司名称>-综合投资价值分析.canvas`
+#### 输出文件
 
-**Canvas 包含**:
-- 标题和评级
-- 估值指标 (PE/PB/市值)
-- 业绩数据 (营收/净利润/利润率)
-- 杜邦分析 (ROE拆解)
-- 投资亮点
-- 风险提示
-- 投资建议
+`~/ai/obsidian-notes/canvases/<公司名称>-综合投资分析.canvas`
+
+#### Canvas 结构 (13个节点)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      标题 (股票代码+当前价)                    │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────┐
+│                      核心结论 (评级/目标价/预期收益)             │
+└────────┬─────────────────┼─────────────────┬────────────────┘
+         │                 │                 │
+    ┌────▼────┐       ┌────▼────┐       ┌────▼────┐
+    │ 业绩数据 │       │ 估值分析 │       │ 风险概览 │
+    └────┬────┘       └────┬────┘       └────┬────┘
+         │                 │                 │
+    ┌────▼────┐       ┌────▼────┐       ┌────▼────┐
+    │ 季度趋势 │       │ 现金流  │       │ 竞品对比 │
+    └────┬────┘       └────┬────┘       └────┬────┘
+         │                 │                 │
+    ┌────▼────┐       ┌────▼────┐       ┌────▼────┐
+    │ 投资亮点 │       │ 投资策略 │       │ 关键监控 │
+    └────┬────┘       └────┬────┘       └────┬────┘
+         │                 │                 │
+         └────────┬────────┴────────┬────────┘
+             ┌────▼────┐       ┌────▼────┐
+             │ 风险详情 │       │ 综合评估 │
+             └─────────┘       └─────────┘
+```
+
+#### 数据提取方式
+
+**优先级 1: JSON 数据块** (推荐)
+
+在分析报告末尾添加结构化数据：
+
+```markdown
+## Canvas 数据
+
+\`\`\`json
+{
+  "current_price": "97.2港元",
+  "target_price": "70-116港元",
+  "rating": "★★★☆☆ (中性偏谨慎)",
+  "market_cap": "~6000亿港元",
+  "pe": "14x",
+  "revenue": "3376亿",
+  "revenue_yoy": "+22%",
+  "net_income": "438亿",
+  "net_margin": "13%",
+  "roe": "~15.6%",
+  "quarters": [
+    {"quarter": "2025Q1", "revenue": "866亿", "revenue_yoy": "+18.1%", "net_income": "109亿"}
+  ],
+  "catalysts": ["龙头地位", "业绩强劲", "现金流充沛"],
+  "risks": ["竞争加剧", "增长放缓", "利润承压"],
+  "suggestion": "70港元以下可建仓"
+}
+\`\`\`
+```
+
+**优先级 2: 正则提取**
+
+自动从报告中提取：
+- 股价、目标价、评级
+- PE/PB/PS/市值
+- 营收、净利润、利润率、ROE
+- 季度数据表格
+- 投资亮点列表
+- 风险列表
+
+#### 颜色说明
+
+| 颜色 | 含义 |
+|------|------|
+| 红色 | 标题 |
+| 绿色 | 正面（结论/亮点/策略） |
+| 青色 | 中性（财务/估值） |
+| 黄色 | 重点数据（季度趋势） |
+| 橙色 | 风险警示 |
+| 紫色 | 监控指标 |
 
 ## Analysis Framework
 
