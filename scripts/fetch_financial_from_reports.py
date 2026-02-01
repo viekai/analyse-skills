@@ -257,8 +257,6 @@ class FinancialReportParser:
             print(f"  PDF文件不存在: {pdf_path}")
             return {'filename': pdf_path.name, 'indicators': {}}
 
-        print(f"  解析PDF: {pdf_path.name}")
-
         result = {
             'filename': pdf_path.name,
             'total_pages': 0,
@@ -267,6 +265,35 @@ class FinancialReportParser:
 
         text_path = pdf_path.with_suffix('.txt') if save_text else None
         text_file = None
+        
+        # 检查是否已有文本文件，跳过 PDF 解析直接读取
+        if text_path and text_path.exists() and text_path.stat().st_size > 0:
+            print(f"  跳过已有文本: {pdf_path.name}")
+            try:
+                with open(text_path, 'r', encoding='utf-8') as f:
+                    full_text = f.read()
+                # 从已有文本中提取指标
+                for indicator_name, patterns in self.patterns.items():
+                    for pattern in patterns:
+                        match = re.search(pattern, full_text, re.IGNORECASE)
+                        if match:
+                            value_str = match.group(1).replace(',', '').replace('，', '')
+                            try:
+                                value = float(value_str)
+                                result['indicators'][indicator_name] = {
+                                    'value': value,
+                                    'source': f'{pdf_path.name} (cached txt)',
+                                    'page': '-',
+                                    'line': '-'
+                                }
+                            except ValueError:
+                                pass
+                            break
+                return result
+            except Exception as e:
+                print(f"    读取缓存文本失败: {e}，重新解析PDF")
+        
+        print(f"  解析PDF: {pdf_path.name}")
 
         # 用于记录每页的行号偏移
         line_offsets = {}

@@ -104,12 +104,13 @@ class PDFStreamingConverter:
         return '\n'.join(cleaned_lines)
 
 
-def convert_all_pdfs(reports_dir: Path) -> Dict[str, Dict]:
+def convert_all_pdfs(reports_dir: Path, skip_existing: bool = True) -> Dict[str, Dict]:
     """
     转换目录下所有PDF文件
 
     Args:
         reports_dir: 年报PDF目录
+        skip_existing: 是否跳过已存在的文本文件（默认True）
 
     Returns:
         转换结果字典 {文件名: 结果}
@@ -126,19 +127,40 @@ def convert_all_pdfs(reports_dir: Path) -> Dict[str, Dict]:
         print(f"未找到PDF文件: {reports_dir}")
         return {}
 
-    print(f"\n找到 {len(pdf_files)} 个PDF文件，开始转换...")
+    print(f"\n找到 {len(pdf_files)} 个PDF文件")
+    
+    skipped = 0
+    converted = 0
 
     for pdf_path in sorted(pdf_files):
+        txt_path = pdf_path.with_suffix('.txt')
+        
+        # 检查是否跳过已存在的文本文件
+        if skip_existing and txt_path.exists() and txt_path.stat().st_size > 0:
+            skipped += 1
+            results[pdf_path.name] = {
+                'success': True, 
+                'skipped': True,
+                'output_file': str(txt_path),
+                'output_size': txt_path.stat().st_size
+            }
+            continue
+        
         print(f"  转换: {pdf_path.name}")
         result = converter.convert_to_text(pdf_path)
 
         if result['success']:
             size_kb = result['output_size'] / 1024
             print(f"    -> {result['output_file']} ({size_kb:.1f} KB, {result['total_pages']} pages)")
+            converted += 1
         else:
             print(f"    -> 失败: {result.get('error', 'Unknown error')}")
 
         results[pdf_path.name] = result
+
+    if skipped > 0:
+        print(f"  跳过已存在: {skipped} 个文件")
+    print(f"  新转换: {converted} 个文件")
 
     return results
 
