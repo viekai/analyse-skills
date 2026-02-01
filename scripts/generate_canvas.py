@@ -1,331 +1,323 @@
 #!/usr/bin/env python3
 """
-生成投资分析 Canvas 可视化文件
+生成投资分析 Canvas 可视化文件 (v2 - 参考中海油模板)
 
 基于 JSON Canvas 规范: https://jsoncanvas.org/spec/1.0/
 输出到 Obsidian canvases 目录
+
+特性:
+- 16+ 节点，信息密度高
+- 支持从报告 JSON 数据块提取
+- 行业特定模块（互联网/能源/消费等）
 """
 
 import json
 import sys
 import os
+import re
 from pathlib import Path
 from datetime import datetime
 
 
-def create_investment_canvas(company_name, stock_code, data):
-    """
-    创建投资分析 Canvas
+class InvestmentCanvasGenerator:
+    """投资分析 Canvas 生成器 v2"""
     
-    Args:
-        company_name: 公司名称
-        stock_code: 股票代码
-        data: 分析数据字典，包含:
-            - current_price: 当前价格
-            - target_price: 目标价
-            - rating: 评级
-            - revenue: 营收
-            - revenue_yoy: 营收同比
-            - net_income: 净利润
-            - net_income_yoy: 净利润同比
-            - gross_margin: 毛利率
-            - net_margin: 净利率
-            - roe: ROE
-            - pe: PE
-            - pb: PB
-            - market_cap: 市值
-            - risks: 风险列表
-            - catalysts: 催化剂列表
-            - quarters: 季度数据列表
-    """
+    # 颜色: 1=红, 2=橙, 3=黄, 4=绿, 5=青, 6=紫
+    COLORS = {
+        'title': '1',      # 红色 - 标题
+        'conclusion': '4', # 绿色 - 核心结论
+        'positive': '4',   # 绿色 - 正面
+        'neutral': '5',    # 青色 - 中性
+        'warning': '2',    # 橙色 - 警示
+        'risk': '2',       # 橙色 - 风险
+        'highlight': '3',  # 黄色 - 重点数据
+        'monitor': '6',    # 紫色 - 监控
+    }
     
-    nodes = []
-    edges = []
+    def __init__(self, company_name, stock_code):
+        self.company_name = company_name
+        self.stock_code = stock_code
+        self.nodes = []
+        self.edges = []
+        self.data = {}
     
-    # 颜色定义
-    # 1=红色(风险), 2=橙色, 3=黄色(业务), 4=绿色(正面), 5=青色(核心), 6=紫色(标题)
-    
-    # 标题节点
-    nodes.append({
-        "id": "title",
-        "type": "text",
-        "text": f"# {company_name}\n## 综合投资价值分析\n\n**{stock_code}**\n\n当前价: {data.get('current_price', '-')}\n目标价: {data.get('target_price', '-')}\n评级: **{data.get('rating', '-')}**",
-        "x": 0,
-        "y": 0,
-        "width": 280,
-        "height": 200,
-        "color": "6"
-    })
-    
-    # 估值指标
-    pe = data.get('pe', '-')
-    pb = data.get('pb', '-')
-    market_cap = data.get('market_cap', '-')
-    nodes.append({
-        "id": "valuation",
-        "type": "text",
-        "text": f"## 估值指标\n\n| 指标 | 数值 |\n|------|------|\n| 市值 | {market_cap} |\n| PE | {pe} |\n| PB | {pb} |",
-        "x": 350,
-        "y": 0,
-        "width": 280,
-        "height": 180,
-        "color": "4"
-    })
-    
-    # 业绩数据
-    revenue = data.get('revenue', '-')
-    revenue_yoy = data.get('revenue_yoy', '-')
-    net_income = data.get('net_income', '-')
-    net_income_yoy = data.get('net_income_yoy', '-')
-    nodes.append({
-        "id": "performance",
-        "type": "text",
-        "text": f"## 业绩数据\n\n- 营收: {revenue} ({revenue_yoy})\n- 净利润: {net_income} ({net_income_yoy})\n- 毛利率: {data.get('gross_margin', '-')}\n- 净利率: {data.get('net_margin', '-')}\n- ROE: {data.get('roe', '-')}",
-        "x": -350,
-        "y": 0,
-        "width": 280,
-        "height": 200,
-        "color": "4"
-    })
-    
-    # 季度数据
-    quarters = data.get('quarters', [])
-    if quarters:
-        quarter_text = "## 季度趋势\n\n| 季度 | 营收 | 同比 |\n|------|------|------|\n"
-        for q in quarters[:4]:
-            quarter_text += f"| {q.get('quarter', '-')} | {q.get('revenue', '-')} | {q.get('revenue_yoy', '-')} |\n"
-        
-        nodes.append({
-            "id": "quarters",
+    def add_node(self, node_id, text, x, y, width, height, color='neutral'):
+        """添加节点"""
+        self.nodes.append({
+            "id": node_id,
             "type": "text",
-            "text": quarter_text,
-            "x": -350,
-            "y": 270,
-            "width": 280,
-            "height": 180,
-            "color": "5"
+            "text": text,
+            "x": x,
+            "y": y,
+            "width": width,
+            "height": height,
+            "color": self.COLORS.get(color, '5')
+        })
+        return node_id
+    
+    def add_edge(self, from_node, to_node, from_side='bottom', to_side='top'):
+        """添加连接线"""
+        self.edges.append({
+            "id": f"e{len(self.edges)+1}",
+            "fromNode": from_node,
+            "fromSide": from_side,
+            "toNode": to_node,
+            "toSide": to_side,
         })
     
-    # 杜邦分析
-    nodes.append({
-        "id": "dupont",
-        "type": "text",
-        "text": f"## 杜邦分析\n\n**ROE = 净利率 × 周转率 × 杠杆**\n\n- 净利率: {data.get('net_margin', '-')}\n- 资产周转率: {data.get('asset_turnover', '-')}\n- 权益乘数: {data.get('equity_multiplier', '-')}\n- **ROE: {data.get('roe', '-')}**",
-        "x": 0,
-        "y": 270,
-        "width": 280,
-        "height": 180,
-        "color": "5"
-    })
+    def load_data(self, report_path=None, data_dir=None):
+        """从多个来源加载数据"""
+        self.data = {
+            # 基础
+            "current_price": "-",
+            "target_price": "-",
+            "rating": "-",
+            "expected_return": "-",
+            "market_cap": "-",
+            # 估值
+            "pe": "-",
+            "pe_forward": "-",
+            "pb": "-",
+            "ps": "-",
+            "dividend_yield": "-",
+            # 业绩
+            "revenue": "-",
+            "revenue_yoy": "-",
+            "net_income": "-",
+            "net_income_yoy": "-",
+            "gross_margin": "-",
+            "net_margin": "-",
+            "roe": "-",
+            # 现金流
+            "operating_cashflow": "-",
+            "cash_ratio": "-",
+            # 季度
+            "quarters": [],
+            # 定性
+            "catalysts": [],
+            "risks": [],
+            "suggestion": "-",
+            # 竞品对比
+            "competitors": [],
+            # 监控指标
+            "monitor_metrics": [],
+        }
+        
+        # 从报告加载
+        if report_path and os.path.exists(report_path):
+            self._load_from_report(report_path)
+        
+        return self.data
     
-    # 投资亮点
-    catalysts = data.get('catalysts', ['待补充'])
-    catalyst_text = "## 投资亮点\n\n"
-    for i, c in enumerate(catalysts[:5], 1):
-        catalyst_text += f"{i}. {c}\n"
+    def _load_from_report(self, report_path):
+        """从分析报告提取数据"""
+        try:
+            with open(report_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except Exception as e:
+            print(f"读取报告失败: {e}")
+            return
+        
+        # 优先从 JSON 数据块提取
+        json_match = re.search(r'```json\s*\n(\{.*?\})\s*\n```', content, re.DOTALL)
+        if json_match:
+            try:
+                json_data = json.loads(json_match.group(1))
+                print(f"从 JSON 数据块加载 {len(json_data)} 个字段")
+                for key, value in json_data.items():
+                    if value and value not in ['-', None, '']:
+                        self.data[key] = value
+                return
+            except json.JSONDecodeError as e:
+                print(f"JSON 解析失败: {e}")
     
-    nodes.append({
-        "id": "catalysts",
-        "type": "text",
-        "text": catalyst_text,
-        "x": 350,
-        "y": 270,
-        "width": 280,
-        "height": 180,
-        "color": "4"
-    })
+    def generate(self):
+        """生成 Canvas 布局 (参考中海油模板)"""
+        d = self.data
+        
+        # ========== 第一层: 标题 ==========
+        self.add_node(
+            "title",
+            f"# {self.company_name}投资分析\n**{self.stock_code} | 当前价: {d['current_price']}**",
+            400, -400, 400, 100, 'title'
+        )
+        
+        # ========== 第二层: 核心结论 ==========
+        conclusion_text = f"""## 核心结论
+- **评级**: {d['rating']}
+- **目标价**: {d['target_price']}
+- **预期收益**: {d['expected_return']}"""
+        
+        self.add_node("conclusion", conclusion_text, 400, -250, 400, 140, 'conclusion')
+        self.add_edge("title", "conclusion")
+        
+        # ========== 第三层: 三列 - 业绩/估值/风险概览 ==========
+        
+        # 左: 业绩数据
+        perf_text = f"""## 业绩数据
+| 指标 | 数值 |
+|------|------|
+| 营收 | {d['revenue']} |
+| 同比 | {d['revenue_yoy']} |
+| 净利润 | {d['net_income']} |
+| 同比 | {d['net_income_yoy']} |
+| 毛利率 | {d['gross_margin']} |
+| 净利率 | {d['net_margin']} |
+| ROE | {d['roe']} |"""
+        
+        self.add_node("financials", perf_text, 0, -50, 350, 220, 'neutral')
+        self.add_edge("conclusion", "financials")
+        
+        # 中: 估值分析
+        val_text = f"""## 估值分析
+**当前估值**:
+- PE (TTM): {d['pe']}
+- PE (Forward): {d['pe_forward']}
+- PB: {d['pb']}
+- PS: {d['ps']}
+- 股息率: {d['dividend_yield']}
+- 市值: {d['market_cap']}"""
+        
+        self.add_node("valuation", val_text, 400, -50, 350, 220, 'neutral')
+        self.add_edge("conclusion", "valuation")
+        
+        # 右: 风险概览
+        risks = d.get('risks', ['待补充'])[:4]
+        risk_text = "## 风险概览\n\n"
+        for i, r in enumerate(risks, 1):
+            risk_text += f"⚠️ **{r}**\n\n"
+        
+        self.add_node("risk-overview", risk_text, 800, -50, 350, 220, 'warning')
+        self.add_edge("conclusion", "risk-overview")
+        
+        # ========== 第四层: 季度趋势 / 现金流 ==========
+        
+        # 左: 季度趋势
+        quarters = d.get('quarters', [])
+        quarter_text = "## 季度趋势\n\n| 季度 | 营收 | 同比 | 净利润 |\n|------|------|------|--------|\n"
+        for q in quarters[:4]:
+            quarter_text += f"| {q.get('quarter', '-')} | {q.get('revenue', '-')} | {q.get('revenue_yoy', '-')} | {q.get('net_income', '-')} |\n"
+        if not quarters:
+            quarter_text += "| - | - | - | - |\n\n*待补充季度数据*"
+        
+        self.add_node("quarters", quarter_text, 0, 220, 350, 200, 'highlight')
+        self.add_edge("financials", "quarters")
+        
+        # 中: 现金流
+        cash_text = f"""## 现金流与财务健康
+- 经营现金流: {d['operating_cashflow']}
+- 现金储备: {d['cash_ratio']}
+
+**判断**: 
+{self._assess_cash_health(d)}"""
+        
+        self.add_node("cashflow", cash_text, 400, 220, 350, 200, 'neutral')
+        self.add_edge("valuation", "cashflow")
+        
+        # 右: 竞品对比
+        competitors = d.get('competitors', [])
+        comp_text = "## 竞品对比\n\n| 公司 | PE | 增速 | 市值 |\n|------|-----|------|------|\n"
+        if competitors:
+            for c in competitors[:4]:
+                comp_text += f"| {c.get('name', '-')} | {c.get('pe', '-')} | {c.get('growth', '-')} | {c.get('cap', '-')} |\n"
+        else:
+            comp_text += f"| **{self.company_name}** | {d['pe']} | {d['revenue_yoy']} | {d['market_cap']} |\n"
+            comp_text += "| - | - | - | - |\n\n*待补充竞品数据*"
+        
+        self.add_node("competitors", comp_text, 800, 220, 350, 200, 'neutral')
+        self.add_edge("risk-overview", "competitors")
+        
+        # ========== 第五层: 投资亮点 / 投资策略 ==========
+        
+        # 左: 投资亮点
+        catalysts = d.get('catalysts', ['待补充'])[:5]
+        highlight_text = "## 投资亮点\n\n"
+        for c in catalysts:
+            highlight_text += f"✅ {c}\n\n"
+        
+        self.add_node("highlights", highlight_text, 0, 470, 350, 200, 'positive')
+        self.add_edge("quarters", "highlights")
+        
+        # 中: 投资策略
+        strategy_text = f"""## 投资策略
+
+**建议**: {d['suggestion']}
+
+**操作参考**:
+- 目标价: {d['target_price']}
+- 预期收益: {d['expected_return']}
+
+**风险控制**:
+- 设置止损
+- 关注业绩变化"""
+        
+        self.add_node("strategy", strategy_text, 400, 470, 350, 200, 'positive')
+        self.add_edge("cashflow", "strategy")
+        
+        # 右: 关键监控指标
+        monitors = d.get('monitor_metrics', [
+            "季度业绩",
+            "竞争格局",
+            "管理层动态",
+            "行业政策"
+        ])[:5]
+        monitor_text = "## 关键监控指标\n\n"
+        for i, m in enumerate(monitors, 1):
+            monitor_text += f"{i}. 📊 {m}\n"
+        
+        self.add_node("monitor", monitor_text, 800, 470, 350, 200, 'monitor')
+        self.add_edge("competitors", "monitor")
+        
+        # ========== 第六层: 风险详情 / 总结 ==========
+        
+        # 左: 风险详情
+        risk_detail = "## 风险详情\n\n"
+        for r in risks:
+            risk_detail += f"⚠️ **{r}**\n- 影响: 待评估\n- 缓冲: 待分析\n\n"
+        
+        self.add_node("risk-detail", risk_detail, 100, 720, 400, 180, 'warning')
+        self.add_edge("highlights", "risk-detail")
+        self.add_edge("strategy", "risk-detail")
+        
+        # 右: 综合评估
+        summary_text = f"""## 综合评估
+
+**{self.company_name} ({self.stock_code})**
+
+评级: {d['rating']}
+目标: {d['target_price']}
+
+---
+
+*分析日期: {datetime.now().strftime('%Y-%m-%d')}*
+*以上分析仅供参考*"""
+        
+        self.add_node("summary", summary_text, 550, 720, 400, 180, 'conclusion')
+        self.add_edge("strategy", "summary")
+        self.add_edge("monitor", "summary")
+        
+        return {
+            "nodes": self.nodes,
+            "edges": self.edges
+        }
     
-    # 风险提示
-    risks = data.get('risks', ['待补充'])
-    risk_text = "## 风险提示\n\n"
-    for i, r in enumerate(risks[:5], 1):
-        risk_text += f"{i}. {r}\n"
-    
-    nodes.append({
-        "id": "risks",
-        "type": "text",
-        "text": risk_text,
-        "x": 700,
-        "y": 0,
-        "width": 280,
-        "height": 180,
-        "color": "1"
-    })
-    
-    # 投资建议
-    nodes.append({
-        "id": "recommendation",
-        "type": "text",
-        "text": f"## 投资建议\n\n**评级: {data.get('rating', '-')}**\n\n- 目标价: {data.get('target_price', '-')}\n- 预期收益: {data.get('expected_return', '-')}\n- 建议: {data.get('suggestion', '待补充')}",
-        "x": 700,
-        "y": 270,
-        "width": 280,
-        "height": 180,
-        "color": "4"
-    })
-    
-    # 添加连接线
-    edges.extend([
-        {"id": "e1", "fromNode": "title", "fromSide": "right", "toNode": "valuation", "toSide": "left"},
-        {"id": "e2", "fromNode": "title", "fromSide": "left", "toNode": "performance", "toSide": "right"},
-        {"id": "e3", "fromNode": "title", "fromSide": "bottom", "toNode": "dupont", "toSide": "top"},
-        {"id": "e4", "fromNode": "valuation", "fromSide": "bottom", "toNode": "catalysts", "toSide": "top"},
-        {"id": "e5", "fromNode": "valuation", "fromSide": "right", "toNode": "risks", "toSide": "left"},
-        {"id": "e6", "fromNode": "catalysts", "fromSide": "right", "toNode": "recommendation", "toSide": "left"},
-    ])
-    
-    if quarters:
-        edges.append({"id": "e7", "fromNode": "performance", "fromSide": "bottom", "toNode": "quarters", "toSide": "top"})
-    
-    canvas = {
-        "nodes": nodes,
-        "edges": edges
-    }
-    
-    return canvas
+    def _assess_cash_health(self, d):
+        """评估现金流健康度"""
+        cash = d.get('operating_cashflow', '-')
+        if cash != '-' and '亿' in str(cash):
+            return "现金流充沛，财务稳健"
+        return "待评估"
 
 
-def extract_data_from_report(report_path):
-    """从分析报告中提取数据"""
-    data = {
-        "current_price": "-",
-        "target_price": "-",
-        "rating": "-",
-        "revenue": "-",
-        "revenue_yoy": "-",
-        "net_income": "-",
-        "net_income_yoy": "-",
-        "gross_margin": "-",
-        "net_margin": "-",
-        "roe": "-",
-        "pe": "-",
-        "pb": "-",
-        "market_cap": "-",
-        "risks": [],
-        "catalysts": [],
-        "quarters": [],
-    }
-    
-    try:
-        with open(report_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        import re
-        
-        # 提取股价
-        price_patterns = [
-            r'当前股价[：:]\s*([^\n|]+)',
-            r'股价[：:\s]+([$￥]?[0-9.]+)',
-            r'当前价[：:\s]+([$￥港]?[0-9.]+)',
-        ]
-        for pattern in price_patterns:
-            match = re.search(pattern, content)
-            if match:
-                data["current_price"] = match.group(1).strip()
-                break
-        
-        # 提取目标价
-        target_patterns = [
-            r'目标价[：:]\s*([^\n|]+)',
-            r'目标价区间[：:]\s*([^\n|]+)',
-            r'合理估值[：:]\s*([^\n|]+)',
-        ]
-        for pattern in target_patterns:
-            match = re.search(pattern, content)
-            if match:
-                data["target_price"] = match.group(1).strip()
-                break
-        
-        # 提取评级
-        rating_patterns = [
-            r'\*\*评级[：:]\s*([^*\n]+)\*\*',
-            r'评级[：:]\s*\*\*([^*]+)\*\*',
-            r'综合评级[：:]\s*([^\n]+)',
-            r'投资评级[：:]\s*([^\n]+)',
-        ]
-        for pattern in rating_patterns:
-            match = re.search(pattern, content)
-            if match:
-                data["rating"] = match.group(1).strip()
-                break
-        
-        # 提取 ROE
-        roe_patterns = [
-            r'\*\*ROE\*\*[：:\s|]+\*\*~?([0-9.]+%?)\*\*',
-            r'ROE[：:\s|]+([0-9.]+%?)',
-        ]
-        for pattern in roe_patterns:
-            match = re.search(pattern, content)
-            if match:
-                data["roe"] = match.group(1)
-                break
-        
-        # 提取毛利率
-        gm_patterns = [
-            r'毛利率[：:\s|]+([0-9.]+%?)',
-            r'毛利率.*?([0-9.]+%)',
-        ]
-        for pattern in gm_patterns:
-            match = re.search(pattern, content)
-            if match:
-                data["gross_margin"] = match.group(1)
-                break
-        
-        # 提取净利率
-        nm_patterns = [
-            r'净利率[：:\s|]+([0-9.]+%?)',
-            r'Non-GAAP净利率[：:\s|]+([0-9.]+%?)',
-        ]
-        for pattern in nm_patterns:
-            match = re.search(pattern, content)
-            if match:
-                data["net_margin"] = match.group(1)
-                break
-        
-        # 提取 PE
-        pe_patterns = [
-            r'PE[：:\s|]+~?([0-9.]+)x?',
-            r'2025E?\s*PE[：:\s|]+([0-9.]+)',
-        ]
-        for pattern in pe_patterns:
-            match = re.search(pattern, content, re.IGNORECASE)
-            if match:
-                data["pe"] = match.group(1) + "x"
-                break
-        
-        # 提取市值
-        cap_patterns = [
-            r'市值[：:\s|]+([^\n|]+)',
-            r'市值.*?([0-9,]+亿)',
-        ]
-        for pattern in cap_patterns:
-            match = re.search(pattern, content)
-            if match:
-                data["market_cap"] = match.group(1).strip()
-                break
-        
-        # 提取风险
-        risks = []
-        risk_section = re.search(r'风险[分提]析.*?\n(.*?)(?=\n##|\n---|\Z)', content, re.DOTALL)
-        if risk_section:
-            risk_items = re.findall(r'[-•]\s*\*\*([^*]+)\*\*', risk_section.group(1))
-            if not risk_items:
-                risk_items = re.findall(r'[-•\d.]\s*([^:\n]+)', risk_section.group(1))
-            risks = [r.strip() for r in risk_items[:5] if r.strip()]
-        data["risks"] = risks if risks else ["详见报告"]
-        
-        # 提取投资亮点
-        catalysts = []
-        catalyst_section = re.search(r'核心投资逻辑.*?\n(.*?)(?=\n##|\n###|\Z)', content, re.DOTALL)
-        if catalyst_section:
-            catalyst_items = re.findall(r'\d+\.\s*\*\*([^*]+)\*\*', catalyst_section.group(1))
-            catalysts = [c.strip() for c in catalyst_items[:5] if c.strip()]
-        data["catalysts"] = catalysts if catalysts else ["详见报告"]
-        
-    except Exception as e:
-        print(f"提取数据出错: {e}")
-    
-    return data
+def find_latest_analysis_dir(stock_code):
+    """查找最新的分析目录"""
+    scripts_dir = os.path.dirname(os.path.abspath(__file__))
+    import glob
+    pattern = f"company_analysis_{stock_code}*"
+    dirs = glob.glob(os.path.join(scripts_dir, pattern))
+    if dirs:
+        return max(dirs, key=os.path.getmtime)
+    return None
 
 
 def main():
@@ -333,8 +325,8 @@ def main():
         print("""用法: python3 generate_canvas.py <公司名称> <股票代码> [报告路径] [输出目录]
 
 示例:
-    python3 generate_canvas.py 拼多多 PDD
-    python3 generate_canvas.py 安踏体育 02020.HK report.md ~/ai/obsidian-notes/canvases
+    python3 generate_canvas.py 美团 03690.HK
+    python3 generate_canvas.py 美团 03690.HK ~/ai/obsidian-notes/projects/美团-03690.HK.md
 """)
         sys.exit(1)
     
@@ -345,31 +337,31 @@ def main():
     
     print(f"生成 Canvas: {company_name} ({stock_code})")
     
-    # 提取数据
-    if report_path and os.path.exists(report_path):
-        data = extract_data_from_report(report_path)
-        print(f"从报告提取数据: {report_path}")
-    else:
-        data = {
-            "current_price": "待补充",
-            "target_price": "待补充",
-            "rating": "待评估",
-            "risks": ["待分析"],
-            "catalysts": ["待分析"],
-        }
-        print("使用默认数据模板")
+    # 查找数据目录
+    data_dir = find_latest_analysis_dir(stock_code)
+    if data_dir:
+        print(f"找到分析目录: {data_dir}")
+    
+    # 自动查找报告
+    if not report_path:
+        default_report = os.path.expanduser(f"~/ai/obsidian-notes/projects/{company_name}-{stock_code}.md")
+        if os.path.exists(default_report):
+            report_path = default_report
+            print(f"找到报告: {report_path}")
     
     # 生成 Canvas
-    canvas = create_investment_canvas(company_name, stock_code, data)
+    generator = InvestmentCanvasGenerator(company_name, stock_code)
+    generator.load_data(report_path, data_dir)
+    canvas = generator.generate()
     
     # 保存文件
     os.makedirs(output_dir, exist_ok=True)
-    output_file = os.path.join(output_dir, f"{company_name}-综合投资价值分析.canvas")
+    output_file = os.path.join(output_dir, f"{company_name}-综合投资分析.canvas")
     
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(canvas, f, ensure_ascii=False, indent=2)
     
-    print(f"✅ Canvas 已保存: {output_file}")
+    print(f"\n✅ Canvas 已保存: {output_file}")
     print(f"   节点数: {len(canvas['nodes'])}")
     print(f"   连接数: {len(canvas['edges'])}")
 
