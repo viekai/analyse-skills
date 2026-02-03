@@ -178,7 +178,7 @@ def download_annual_reports(stock_code: str, output_dir: Path, years: int = 5) -
         se_date = f"{start_year}-01-01~{end_date.strftime('%Y-%m-%d')}"
 
         if market_type == 'HK':
-            # 港股 - 先查询所有公告，再筛选年报
+            # 港股 - 使用关键词搜索年度业绩公告
             filter_config = {
                 'market': 'hke',
                 'tabName': 'fulltext',
@@ -186,7 +186,7 @@ def download_annual_reports(stock_code: str, output_dir: Path, years: int = 5) -
                 'category': [],  # 港股暂无分类筛选
                 'industry': [],
                 'stock': [code],
-                'searchkey': '',  # 不使用搜索关键字，避免过滤
+                'searchkey': '年度',  # 搜索年度相关公告
                 'seDate': se_date,
             }
             # 查询所有公告
@@ -196,9 +196,11 @@ def download_annual_reports(stock_code: str, output_dir: Path, years: int = 5) -
             annual_reports = []
             for ann in all_announcements:
                 title = ann.get('announcementTitle', '')
-                # 港股年报标题通常包含"年度业绩"或"年報"
-                if '年度业绩' in title or '年報' in title or '年度報告' in title:
-                    annual_reports.append(ann)
+                # 港股年报标题通常包含"年度"+"业绩"或"年報"
+                if ('年度' in title and '业绩' in title) or '年報' in title or '年度報告' in title or '全年业绩' in title:
+                    # 排除股息公告
+                    if '股息' not in title:
+                        annual_reports.append(ann)
 
             print(f"  从 {len(all_announcements)} 条公告中筛选出 {len(annual_reports)} 份年报")
 
@@ -239,7 +241,8 @@ def download_annual_reports(stock_code: str, output_dir: Path, years: int = 5) -
                     filename = pdf_file.name.lower()
                     if market_type == 'HK':
                         # 港股年报筛选（年度业绩公布）
-                        if '年度业绩' in pdf_file.name or '年報' in pdf_file.name or '年度報告' in pdf_file.name:
+                        fname = pdf_file.name
+                        if (('年度' in fname and '业绩' in fname) or '年報' in fname or '年度報告' in fname or '全年业绩' in fname) and '股息' not in fname:
                             dst_path = reports_dir / pdf_file.name
                             shutil.copy2(pdf_file, dst_path)
                             downloaded_files.append(str(dst_path))
