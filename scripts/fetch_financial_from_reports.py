@@ -391,8 +391,8 @@ class FinancialReportParser:
 
 
 def extract_year_from_filename(filename: str) -> Optional[str]:
-    """从文件名中提取年份"""
-    match = re.search(r'(\d{4})', filename)
+    """从文件名中提取年份（匹配 20xx 年份，避免匹配股票代码）"""
+    match = re.search(r'(20\d{2})', filename)
     return match.group(1) if match else None
 
 

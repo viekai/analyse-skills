@@ -9,8 +9,7 @@ import pandas as pd
 try:
     import akshare as ak
 except ImportError:
-    print("Error: akshare not installed. Install with: pip install akshare")
-    sys.exit(1)
+    ak = None
 
 from utils import save_json, normalize_stock_code
 
@@ -97,6 +96,11 @@ def fetch_peer_financials(peer_codes: list, output_dir: Path) -> list:
 
 def main(stock_code: str, industry_name: str, output_dir: Path):
     """Main function"""
+    if ak is None:
+        print("  ⚠ akshare 未安装，跳过行业数据（已禁用）")
+        (output_dir / 'processed_data').mkdir(parents=True, exist_ok=True)
+        save_json({'industry_name': industry_name, 'note': 'akshare disabled'}, output_dir / 'processed_data' / 'industry_info.json')
+        return
     normalized_code, market, market_type = normalize_stock_code(stock_code)
 
     print(f"\n{'='*60}")

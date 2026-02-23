@@ -15,7 +15,7 @@ from decimal import Decimal
 class StockPriceFetcher:
     """通过 uu_server API 获取股票实时价格和市值信息"""
 
-    def __init__(self, server_url: str = "http://39.96.211.212:5000"):
+    def __init__(self, server_url: str = "http://39.96.211.212:15000"):
         """
         初始化股票价格获取器
 
