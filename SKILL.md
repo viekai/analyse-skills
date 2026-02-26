@@ -19,7 +19,7 @@ This skill provides comprehensive investment analysis for listed companies, supp
 - **港股财报和公告**: 巨潮资讯网港股频道 (cninfo.com.cn/hke)
 - **US财报和公告**: SEC EDGAR (sec.gov)
 - **US公司财务数据**: edgartools (适用于标准10-K/10-Q)
-- **实时行情**: 东方财富 (eastmoney.com) + 新浪财经 (备用)
+- **实时行情**: Futu API (`http://39.96.211.212:15000/api/stock/quote/`) + 东方财富备用
 - **新闻/市场情绪**: 通过 OpenClaw web_search 工具采集公开新闻
 
 **Key Principles**:
@@ -80,7 +80,7 @@ python3 analyze_company.py MSFT        # Microsoft
 6. **Generates news search guidance** for web_search
 7. Generates analysis prompt with latest data guidance
 
-### Step 3: Execute News Search (NEW!)
+### Step 3: Execute News Search
 
 After data collection, execute news search using the generated guidance:
 
@@ -96,9 +96,6 @@ queries = [
     "安踏体育 业绩 财报",
     "安踏体育 投资 分析",
 ]
-
-# 使用 web_search 工具搜索每个查询
-# 汇总结果并分析市场情绪
 ```
 
 ### Step 4: Generate Analysis Report
@@ -108,22 +105,31 @@ After data collection and news search, generate the analysis report:
 2. Load news analysis from `processed_data/news_analysis.json` (if available)
 3. Load the analysis framework: `references/analysis_framework.md`
 4. Load DuPont analysis guide: `references/dupont_analysis.md`
-5. **Prioritize analysis of latest quarterly data** if current year's annual report not available
-6. Generate comprehensive analysis combining:
+5. **Load DCF methodology: `references/dcf_methodology.md`** (for valuation section)
+6. **Load Comps methodology: `references/comps_methodology.md`** (for peer comparison)
+7. **Load Competitive analysis: `references/competitive_analysis.md`** (for moat/competitive section)
+8. **Prioritize analysis of latest quarterly data** if current year's annual report not available
+9. Generate comprehensive analysis combining:
    - Historical annual reports
    - Latest quarterly data
    - News and market sentiment
-7. Save report to `analysis_report.md`
+   - Competitive positioning
+   - DCF valuation (Bear/Base/Bull scenarios)
+   - Comps peer comparison
+10. Save report to `analysis_report.md`
 
 ### Step 5: Deliver Results
 
 Present the analysis report to the user, highlighting:
 - Executive summary with key investment points
 - DuPont analysis (ROE decomposition)
+- Competitive positioning and moat assessment
+- Peer comparison (Comps)
+- DCF valuation with scenarios and sensitivity analysis
 - Key findings from announcements
 - Market sentiment from news
 - Critical risks
-- Investment recommendation
+- Investment recommendation with price target range
 
 ### Step 6: Generate Canvas Visualization (v2)
 
@@ -204,16 +210,6 @@ python3 generate_canvas.py 泡泡玛特 09992.HK
 \`\`\`
 ```
 
-**优先级 2: 正则提取**
-
-自动从报告中提取：
-- 股价、目标价、评级
-- PE/PB/PS/市值
-- 营收、净利润、利润率、ROE
-- 季度数据表格
-- 投资亮点列表
-- 风险列表
-
 #### 颜色说明
 
 | 颜色 | 含义 |
@@ -234,10 +230,33 @@ python3 generate_canvas.py 泡泡玛特 09992.HK
 ROE = 净利率 × 资产周转率 × 权益乘数
 ```
 
+### DCF Valuation (Three-Scenario)
+
+```
+Bear / Base / Bull scenarios
+WACC = Risk-free rate + Beta × ERP
+EV = Σ(UFCF / (1+WACC)^t) + Terminal Value
+Price Target = (EV - Net Debt) / Diluted Shares
+```
+
+### Comps Peer Comparison
+
+```
+Peer universe (3-8 companies)
+Key multiples: EV/EBITDA, P/E, EV/Revenue
+Statistical benchmarks: median, Q1, Q3
+Target company positioning within the distribution
+```
+
 ### Analysis Flow
 
 ```
-下载财报/公告 → 提取财务数据 → 新闻采集 → 行业分析 → 商业模式分析 → 财务分析(杜邦) → 公告分析 → 市场情绪 → 风险分析 → 估值分析 → 投资建议
+下载财报/公告 → 提取财务数据 → 新闻采集
+→ 行业分析 → 竞争格局(五力+护城河)
+→ 商业模式分析 → 财务分析(杜邦)
+→ 可比公司分析(Comps) → DCF估值(三情景)
+→ 公告分析 → 市场情绪
+→ 风险分析 → 估值交叉验证 → 投资建议
 ```
 
 ## Output Structure
@@ -255,7 +274,7 @@ company_analysis_<code>_<date>/
 │   ├── company_info.json         # 公司信息 + 实时行情
 │   ├── financial_data_with_source.json  # 带来源的财务数据
 │   ├── financials_<ticker>.json  # edgartools 提取的财务数据 (美股)
-│   ├── quarterly_data.json       # 季度财务数据 (NEW!)
+│   ├── quarterly_data.json       # 季度财务数据
 │   ├── quarterly_search_prompt.md # 季度数据搜索指引 (20-F公司)
 │   ├── metrics_tables.md         # 核心指标表格
 │   ├── news_search_prompt.md     # 新闻采集指引
@@ -263,10 +282,10 @@ company_analysis_<code>_<date>/
 │   ├── all_announcements.json    # 所有公告
 │   └── important_announcements.json  # 重要公告
 ├── analysis_prompt.txt           # AI分析提示词
-└── analysis_report.md            # 最终分析报告
+└── analysis_report.md            # 最终分析报告（含Canvas数据块）
 ```
 
-## US Stock Quarterly Data (NEW!)
+## US Stock Quarterly Data
 
 ### 美股财务数据获取方式
 
@@ -278,98 +297,42 @@ company_analysis_<code>_<date>/
 ### 使用方法
 
 ```bash
-# 检查公司类型并获取数据
 python3 fetch_us_quarterly.py <ticker> [output_dir]
-
-# 示例
-python3 fetch_us_quarterly.py AAPL   # 自动提取
-python3 fetch_us_quarterly.py PDD    # 生成搜索指引
 ```
 
-### 外国发行人 (20-F) 处理流程
+## News Collection
 
-1. 运行 `fetch_us_quarterly.py` 检测公司类型
-2. 如果不支持 edgartools，会生成 `quarterly_search_prompt.md`
-3. 使用 **web_search** 按指引搜索季度数据
-4. 将结果保存到 `quarterly_data.json`
-
-### 季度数据格式
-
-```json
-{
-    "company": "PDD Holdings Inc.",
-    "ticker": "PDD",
-    "fiscal_year": 2025,
-    "quarters": [
-        {
-            "quarter": "Q1",
-            "revenue": "956.7亿元",
-            "revenue_yoy": "+10%",
-            "net_income": "147.4亿元",
-            "source": "新浪财经"
-        }
-    ]
-}
-```
-
-## News Collection (NEW!)
-
-### How It Works
-
-The skill generates news search guidance that uses OpenClaw's `web_search` tool:
-
-1. **No external dependencies** - Uses built-in web_search
-2. **Public sources only** - News, articles, analyst reports
-3. **Structured output** - JSON format for analysis integration
-
-### News Analysis Format
-
-```json
-{
-    "company": "安踏体育",
-    "stock_code": "02020.HK",
-    "fetch_time": "2026-01-31T02:30:00",
-    "news": [
-        {
-            "title": "新闻标题",
-            "url": "链接",
-            "snippet": "摘要",
-            "source": "来源"
-        }
-    ],
-    "summary": {
-        "total_count": 25,
-        "sentiment": "positive",
-        "key_topics": ["业绩增长", "品牌扩张"],
-        "risk_signals": ["竞争加剧"]
-    }
-}
-```
+The skill generates news search guidance using OpenClaw's `web_search` tool:
+1. No external dependencies - uses built-in web_search
+2. Public sources only - news, articles, analyst reports
+3. Structured JSON output for analysis integration
 
 ## Market Support Details
 
 ### A-shares (A股)
 - **Source**: 巨潮资讯网 (cninfo.com.cn)
 - **Reports**: 年报、季报、公告
-- **Language**: Chinese
 
 ### Hong Kong (港股)
 - **Source**: 巨潮资讯网港股频道
 - **Reports**: 年度业绩、中期业绩、季度运营公告
-- **Language**: Chinese/English
 
 ### US Stocks (美股)
 - **Source**: SEC EDGAR (sec.gov)
 - **Reports**: 10-K, 10-Q, 8-K, 20-F, 6-K
-- **Language**: English
 - **Note**: 行业数据获取受限（akshare 不支持美股）
 
 ## Reference Files
 
 Load these as needed during analysis:
-- **`references/analysis_framework.md`**: Complete analysis methodology
-- **`references/dupont_analysis.md`**: Detailed DuPont analysis guide
-- **`assets/report_template.md`**: Report structure template
+
+| 文件 | 内容 | 何时加载 |
+|------|------|---------|
+| `references/analysis_framework.md` | 完整分析方法论和质量检查 | 每次分析 |
+| `references/dupont_analysis.md` | 杜邦分析详细指南 | 财务分析阶段 |
+| `references/dcf_methodology.md` | DCF估值完整方法论（WACC/情景/敏感性）| 估值阶段 |
+| `references/comps_methodology.md` | 可比公司分析方法论 | 相对估值阶段 |
+| `references/competitive_analysis.md` | 竞争格局分析（五力/护城河/定位矩阵）| 竞争分析阶段 |
 
 ## Quick Commands
 
@@ -386,20 +349,45 @@ python3 analyze_company.py 09992 3
 # 快速加载已分析公司
 python3 quick_learn.py list
 python3 quick_learn.py load 09992.HK
+
+# 生成 Canvas 可视化
+python3 generate_canvas.py 泡泡玛特 09992.HK
 ```
 
 ## Dependencies
 
 ```bash
 pip install httpx pandas PyPDF2
-```
-
-或者使用项目的 requirements.txt：
-```bash
+# 或
 pip install -r requirements.txt
 ```
 
 ## Changelog
+
+### v3.2 (2026-05)
+
+**分析方法论升级（投行级）**:
+- 新增 `references/dcf_methodology.md` — DCF完整方法论
+  - WACC计算（含A股/港股/美股市场参数）
+  - 三情景分析（Bear/Base/Bull）
+  - 敏感性分析（WACC × 永续增长率）
+  - 常见错误检查清单
+- 新增 `references/comps_methodology.md` — 可比公司分析
+  - 5-10法则（运营指标 + 估值倍数）
+  - 统计基准（中位数/四分位数）
+  - A股/港股特殊考虑（AH溢价、流动性折价）
+- 新增 `references/competitive_analysis.md` — 竞争格局分析
+  - 2×2竞争定位矩阵
+  - 波特五力模型（中国市场适配）
+  - 竞争壁垒评分（6维度 1-5分）
+- 更新 `references/analysis_framework.md` — 整合新方法论
+  - 新增竞争格局分析章节
+  - 估值部分扩展为Comps+DCF交叉验证
+  - 更新质量检查清单
+- 更新 `SKILL.md` Step 4 — 加载新参考文件
+
+**数据源更新**:
+- 实时行情优先使用 Futu API (`http://39.96.211.212:15000`)
 
 ### v3.1 (2026-02-01)
 
@@ -407,21 +395,13 @@ pip install -r requirements.txt
 - 参考中海油模板，13个节点完整布局
 - 支持 JSON 数据块优先提取
 - 改进正则提取，支持多种报告格式
-- 新增：季度趋势、竞品对比、投资策略、关键监控模块
 
 **性能优化**:
 - **跳过已有文本文件** - 重复分析从 180s+ 降至 8s
-- `pdf_to_text.py` - 检查 .txt 是否存在
-- `fetch_financial_from_reports.py` - 直接读取缓存文本
-
-**报告格式**:
-- 报告末尾添加 `## Canvas 数据` JSON 块
-- Canvas 脚本自动提取 JSON 数据填充节点
 
 ### v3.0 (2026-01-31)
 - **移除雪球依赖** - 不再使用雪球爬虫
 - **新增新闻采集** - 通过 web_search 工具采集公开新闻
-- **市场情绪分析** - 基于新闻内容分析市场情绪
 - **美股支持** - SEC EDGAR 数据源
 
 ### v2.1
