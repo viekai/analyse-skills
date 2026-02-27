@@ -41,10 +41,10 @@ A_SHARE_REPORT_CATEGORIES = {
 
 # 港股报告类型 -> 标题关键词映射
 HK_REPORT_KEYWORDS = {
-    'annual': ['年度业绩', '年報', '年度報告', 'Annual Report', 'Annual Results'],
-    'semi': ['中期业绩', '中期報告', '半年報', 'Interim Report', 'Interim Results'],
-    'q1': ['第一季', '首季', '一季度', 'First Quarter', 'Q1'],
-    'q3': ['第三季', '三季度', 'Third Quarter', 'Q3'],
+    'annual': ['年度业绩', '全年业绩', '年報', '年度報告', 'Annual Report', 'Annual Results'],
+    'semi': ['中期业绩', '中期報告', '中期报告', '半年報', '六个月业绩', 'Interim Report', 'Interim Results'],
+    'q1': ['第一季', '首季', '一季度', '三个月业绩', 'First Quarter', 'Q1'],
+    'q3': ['第三季', '三季度', '九个月业绩', 'Third Quarter', 'Q3'],
 }
 
 # 报告类型 -> 目录名映射
@@ -327,18 +327,20 @@ def download_reports_by_type(
 
             # 用关键词筛选对应类型的报告
             keywords = HK_REPORT_KEYWORDS.get(report_type, [])
+            # 排斥关键词：避免Q1匹配到半年报/Q3/年报
+            EXCLUDE_KEYWORDS = {
+                'annual': ['股息'],
+                'semi': ['股息', '九个月'],
+                'q1': ['股息', '六个月', '九个月', '全年', '年度'],
+                'q3': ['股息'],
+            }
+            exclude_kws = EXCLUDE_KEYWORDS.get(report_type, ['股息'])
             filtered_reports = []
             for ann in all_announcements:
                 title = ann.get('announcementTitle', '')
                 if any(kw in title for kw in keywords):
-                    # 排除其他类型的报告（避免重复）
-                    is_other_type = False
-                    for other_type, other_kws in HK_REPORT_KEYWORDS.items():
-                        if other_type != report_type:
-                            if any(kw in title for kw in other_kws):
-                                # 检查是否更匹配其他类型
-                                pass
-                    filtered_reports.append(ann)
+                    if not any(ekw in title for ekw in exclude_kws):
+                        filtered_reports.append(ann)
 
             print(f"  从 {len(all_announcements)} 条公告中筛选出 {len(filtered_reports)} 份{report_name}")
 
